@@ -1,14 +1,14 @@
-module OpCodes where
+module Instructions where
 
 import Clash.Prelude
 import BaseTypes
 
 type Destination = RegisterID
 type Source = RegisterID
-type Immediate = Unsigned 32
+type Immediate = Signed 32
 type ShiftAmount = Unsigned 5
 
-data OpCode =
+data Instruction =
       LUI   Immediate Destination
     | AUIPC Immediate Destination
     | JAL   Immediate Destination
