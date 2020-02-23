@@ -34,3 +34,6 @@ compareUnsigned operand2 operand1 func = unsigned1 `func` unsigned2
     where
         unsigned2 :: Unsigned 32 = conv operand2
         unsigned1 :: Unsigned 32 = conv operand1
+
+loadUpperImmediate :: RegisterValue -> RegisterValue -> RegisterValue
+loadUpperImmediate imm _ = imm `shift` 12

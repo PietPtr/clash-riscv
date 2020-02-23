@@ -16,22 +16,16 @@ nullstate :: State
 nullstate = State {pc=0, registers=emptyregs}
 
 data ControlCode = ControlCode
-    { operand3 :: RegisterValue
-    , operand2 :: RegisterValue
+    { operand2 :: RegisterValue
     , operand1 :: RegisterValue
-    , useBinary :: Bool
     , fbinary :: (RegisterValue -> RegisterValue -> RegisterValue)
-    , fternary :: (RegisterValue -> RegisterValue -> RegisterValue -> RegisterValue)
     }
 
 nop :: ControlCode
 nop = ControlCode
-    { operand3 = 0
-    , operand2 = 0
+    { operand2 = 0
     , operand1 = 0
-    , useBinary = True
     , fbinary = (\a b -> a)
-    , fternary = (\a b c -> a)
     }
 
 execute :: State -> Instruction -> RegisterValue
@@ -86,8 +80,7 @@ buildCode (IType op imm rs1 rd) State{registers=registers, pc=pc} =
             SRAI -> shiftRightArithmetical
 
 buildCode (SType op imm rs2 rs1) State{registers=registers, pc=pc} =
-    nop {operand3 = imm,
-        operand2 = operand2,
+    nop {operand2 = operand2,
         operand1 = readRegister rs1 registers,
         fbinary = arithmeticFunction}
     where
@@ -106,3 +99,12 @@ buildCode (SType op imm rs2 rs1) State{registers=registers, pc=pc} =
             SB -> (\o2 o1 -> o2+imm+o1)
             SH -> (\o2 o1 -> o2+imm+o1)
             SW -> (\o2 o1 -> o2+imm+o1)
+
+buildCode (UType op imm rd) State{registers=registers, pc=pc} =
+    nop {operand2 = imm,
+        fbinary = arithmeticFunction}
+    where
+        arithmeticFunction = case op of
+            LUI -> loadUpperImmediate
+            AUIPC -> loadUpperImmediate
+            JAL -> \_ _ -> pc + imm
