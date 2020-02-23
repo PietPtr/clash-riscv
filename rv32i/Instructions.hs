@@ -30,6 +30,7 @@ data Instruction =
     | ADDI  Immediate Source Destination
     | SLTI  Immediate Source Destination
     | SLTIU Immediate Source Destination
+    | XORI   Immediate Source Destination
     | ORI   Immediate Source Destination
     | ANDI  Immediate Source Destination
     | SLLI  ShiftAmount Source Destination

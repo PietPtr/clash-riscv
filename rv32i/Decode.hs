@@ -30,5 +30,57 @@ constructImmediate (JType imm20 imm10'1 imm11 imm19'12 _ _) = sign .|. rest
         pos11 = toInteger imm11 `shift` 11
         pos10'1 = toInteger imm10'1 `shift` 1
 
+
 decode :: InstructionForm -> Instruction
-decode a = FENCE
+decode (RType funct7 rs2 rs1 funct3 rd opcode) = instructionConstructor rs2 rs1 rd
+    where
+        instructionConstructor = case opcode of
+            0b0110011 -> case (funct3, testBit funct7 5) of
+                (0b000, False) -> ADD
+                (0b000, True)  -> SUB
+                (0b001, False) -> SLL
+                (0b010, False) -> SLT
+                (0b011, False) -> SLTU
+                (0b100, False) -> XOR
+                (0b101, False) -> SRL
+                (0b101, True)  -> SRA
+                (0b110, False) -> OR
+                (0b111, False) -> AND
+decode (IType imm11'0 rs1 funct3 rd opcode) = instructionConstructor immediate rs1 rd
+    where
+        instructionConstructor = case opcode of
+            0b0000011 -> case (funct3) of
+                0b000 -> LB
+                0b001 -> LH
+                0b010 -> LW
+                0b100 -> LBU
+                0b101 -> LHU
+            0b0010011 -> case (funct3) of
+                0b000 -> ADDI
+                0b010 -> SLTI
+                0b011 -> SLTIU
+                0b100 -> XORI
+                0b110 -> ORI
+                0b111 -> ANDI
+            0b1100111 -> JALR
+        immediate = constructImmediate (IType imm11'0 rs1 funct3 rd opcode)
+decode (SType imm11'5 rs2 rs1 funct3 imm4'0 opcode) = instructionConstructor immediate rs2 rs1
+    where
+        immediate = constructImmediate (SType imm11'5 rs2 rs1 funct3 imm4'0 opcode)
+        instructionConstructor = case opcode of
+            0b0100011 -> case funct3 of
+                0b000 -> SB
+                0b001 -> SH
+                0b010 -> SW
+decode (BType imm12 imm10'5 rs2 rs1 funct3 imm4'1 imm11 opcode) = instructionConstructor immediate rs2 rs1
+    where
+        immediate = constructImmediate (BType imm12 imm10'5 rs2 rs1 funct3 imm4'1 imm11 opcode)
+        instructionConstructor = case opcode of
+            0b1100011 -> case funct3 of
+                0b000 -> BEQ
+                0b001 -> BNE
+                0b100 -> BLT
+                0b101 -> BGE
+                0b110 -> BLTU
+                0b111 -> BGEU
+-- decode (UType imm31'12 rd opcode) = instructionConstructor immediate destination
