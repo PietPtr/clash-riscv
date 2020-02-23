@@ -22,23 +22,13 @@ type Imm10'1 = Unsigned 10
 type Imm19'12 = Unsigned 8
 
 data InstructionForm =
-      RType Funct7 RegisterID RegisterID Funct3 RegisterID OpCodeField
-    | IType (Imm11'0) RegisterID Funct3 RegisterID OpCodeField
-    | SType (Imm11'5) RegisterID RegisterID Funct3 (Imm4'0) OpCodeField
-    | BType (Imm12) (Imm10'5) RegisterID RegisterID Funct3 (Imm4'1) (Imm11) OpCodeField
-    | UType (Imm31'12) RegisterID OpCodeField
-    | JType (Imm20) (Imm10'1) (Imm11) (Imm19'12) RegisterID OpCodeField
+      RTypeForm Funct7 RegisterID RegisterID Funct3 RegisterID OpCodeField
+    | ITypeForm (Imm11'0) RegisterID Funct3 RegisterID OpCodeField
+    | STypeForm (Imm11'5) RegisterID RegisterID Funct3 (Imm4'0) OpCodeField
+    | BTypeForm (Imm12) (Imm10'5) RegisterID RegisterID Funct3 (Imm4'1) (Imm11) OpCodeField
+    | UTypeForm (Imm31'12) RegisterID OpCodeField
+    | JTypeForm (Imm20) (Imm10'1) (Imm11) (Imm19'12) RegisterID OpCodeField
     deriving (Show, Eq)
-
-op 1 = 0xff010113 -- addi	x2,x2,-16
-op 2 = 0x00000593 -- li 	x11,0
-op 3 = 0x00812423 -- sw 	x8,8(x2)
-op 4 = 0xfb9ff0ef -- jal	x1,10150
-op 5 = 0x00112623 -- sw 	x1,12(x2)
-op 6 = 0xfec42703 -- lw 	x14,-20(x8)
-op 7 = 0x40f90933 -- sub	x18,x18,x15
-op 8 = 0x05778063 -- beq	x15,x23,10400
-op 9 = 0x00010537 -- lui    x10,0x0
 
 extractOpCode :: Unsigned 32 -> Unsigned 7
 extractOpCode instruction = resize $ instruction .&. 0b1111111
@@ -50,14 +40,14 @@ rs1_shift = -15
 rs2_shift = -20
 
 parseUType :: Unsigned 32 -> InstructionForm
-parseUType instruction = UType imm31'12 rd opcode
+parseUType instruction = UTypeForm imm31'12 rd opcode
     where
         imm31'12 = truncateB $ instruction `shift` (-12)
         rd = truncateB $ instruction `shift` rd_shift
         opcode = extractOpCode instruction
 
 parseJType :: Unsigned 32 -> InstructionForm
-parseJType instruction = JType imm20 imm10'1 imm11 imm19'12 rd opcode
+parseJType instruction = JTypeForm imm20 imm10'1 imm11 imm19'12 rd opcode
     where
         imm20 = truncateB $ instruction `shift` (-31)
         imm10'1 = truncateB $ instruction `shift` (-21)
@@ -67,7 +57,7 @@ parseJType instruction = JType imm20 imm10'1 imm11 imm19'12 rd opcode
         opcode = extractOpCode instruction
 
 parseIType :: Unsigned 32 -> InstructionForm
-parseIType instruction = IType imm11'0 rs1 funct3 rd opcode
+parseIType instruction = ITypeForm imm11'0 rs1 funct3 rd opcode
     where
         imm11'0 = truncateB $ instruction `shift` (-20)
         rs1 = truncateB $ instruction `shift` rs1_shift
@@ -76,7 +66,7 @@ parseIType instruction = IType imm11'0 rs1 funct3 rd opcode
         opcode = extractOpCode instruction
 
 parseBType :: Unsigned 32 -> InstructionForm
-parseBType instruction = BType imm12 imm10'5 rs2 rs1 funct3 imm4'1 imm11 opcode
+parseBType instruction = BTypeForm imm12 imm10'5 rs2 rs1 funct3 imm4'1 imm11 opcode
     where
         imm12 = truncateB $ instruction `shift` (-31)
         imm10'5 = truncateB $ instruction `shift` (-25)
@@ -88,7 +78,7 @@ parseBType instruction = BType imm12 imm10'5 rs2 rs1 funct3 imm4'1 imm11 opcode
         opcode = extractOpCode instruction
 
 parseSType :: Unsigned 32 -> InstructionForm
-parseSType instruction = SType imm11'5 rs2 rs1 funct3 imm4'0 opcode
+parseSType instruction = STypeForm imm11'5 rs2 rs1 funct3 imm4'0 opcode
     where
         imm11'5 = truncateB $ instruction `shift` (-25)
         rs2 = truncateB $ instruction `shift` rs2_shift
@@ -98,7 +88,7 @@ parseSType instruction = SType imm11'5 rs2 rs1 funct3 imm4'0 opcode
         opcode = extractOpCode instruction
 
 parseRType :: Unsigned 32 -> InstructionForm
-parseRType instruction = RType funct7 rs2 rs1 funct3 rd opcode
+parseRType instruction = RTypeForm funct7 rs2 rs1 funct3 rd opcode
     where
         funct7 = truncateB $ instruction `shift` funct7_shift
         rs2 = truncateB $ instruction `shift` rs2_shift
