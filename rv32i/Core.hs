@@ -8,6 +8,7 @@ import Instructions
 import BaseTypes
 import Fetch
 import Decode
+import ALUFunctions
 import Execute
 
 import Numeric (showHex, showIntAtBase)

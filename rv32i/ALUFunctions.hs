@@ -25,3 +25,12 @@ shiftLeftLogical operand2 operand1 = operand1 `shiftL` (fromIntegral $ operand2 
 
 jumpAndLinkReg :: RegisterValue -> RegisterValue -> RegisterValue
 jumpAndLinkReg operand2 operand1 = (operand2 + operand1) .&. 0xfffffffc
+
+zero :: RegisterValue -> RegisterValue -> RegisterValue
+zero _ _ = 0
+
+compareUnsigned :: RegisterValue -> RegisterValue -> (Unsigned 32 -> Unsigned 32 -> Bool) -> Bool
+compareUnsigned operand2 operand1 func = unsigned1 `func` unsigned2
+    where
+        unsigned2 :: Unsigned 32 = conv operand2
+        unsigned1 :: Unsigned 32 = conv operand1

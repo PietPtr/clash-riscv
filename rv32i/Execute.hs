@@ -10,53 +10,46 @@ import ALUFunctions
 data State = State
     { pc :: PC
     , registers :: RegisterBank
-    , intermediateRegs :: Vec 2 RegisterValue
     } deriving (Show, Eq)
 
 nullstate :: State
-nullstate = State {pc=0, registers=emptyregs, intermediateRegs=0:>0:>Nil}
+nullstate = State {pc=0, registers=emptyregs}
 
-data MachineCode = MachineCode
-    { operand2 :: RegisterValue
+data ControlCode = ControlCode
+    { operand3 :: RegisterValue
+    , operand2 :: RegisterValue
     , operand1 :: RegisterValue
-    , destination :: Unsigned 6 -- Larger than RegisterID to allow intermediate registers for e.g. mem calcs
-    , arithmetic :: (RegisterValue -> RegisterValue -> RegisterValue)
+    , useBinary :: Bool
+    , fbinary :: (RegisterValue -> RegisterValue -> RegisterValue)
+    , fternary :: (RegisterValue -> RegisterValue -> RegisterValue -> RegisterValue)
     }
 
--- Constant names for the intermediate registers
-cJUMPREG :: Unsigned 6
-cJUMPREG = 32
-
-nop :: MachineCode
-nop = MachineCode
-    { operand2 = 0
+nop :: ControlCode
+nop = ControlCode
+    { operand3 = 0
+    , operand2 = 0
     , operand1 = 0
-    , destination = 0
-    , arithmetic = (+)
+    , useBinary = True
+    , fbinary = (\a b -> a)
+    , fternary = (\a b c -> a)
     }
 
-execute :: State -> Instruction -> State
-execute state instruction = state'
+execute :: State -> Instruction -> RegisterValue
+execute state instruction = result
     where
-        State{..} = state
-        MachineCode{..} = buildCode instruction registers
-
-        state' = (State {pc=pc', registers=registers', intermediateRegs=intermediateRegs'})
-
-        pc' = pc
-        useIntermediateBank = testBit (trace (show ("de hallo", destination)) destination) 5
-        registers' = if (useIntermediateBank)
-            then registers
-            else replace (destination .&. 0b11111) (arithmetic operand2 operand1) registers
-
-        intermediateRegs' = if (useIntermediateBank)
-            then replace (destination .&. 0b1) (arithmetic operand2 operand1) intermediateRegs
-            else intermediateRegs
+        ControlCode{..} = buildCode instruction state
+        result = fbinary operand2 operand1
 
 
-buildCode :: Instruction -> RegisterBank -> MachineCode
-buildCode (RType op rs2 rs1 rd) registers =
-    nop {operand2 = registers !! rs2, operand1 = registers !! rs1, destination = resize rd, arithmetic = arithmeticFunction}
+readRegister :: RegisterID -> RegisterBank -> RegisterValue
+readRegister 0 _ = 0
+readRegister reg bank = bank !! reg
+
+buildCode :: Instruction -> State -> ControlCode
+buildCode (RType op rs2 rs1 rd) State{registers=registers, pc=pc} =
+    nop {operand2 = readRegister rs2 registers,
+        operand1 = readRegister rs1 registers,
+        fbinary = arithmeticFunction}
     where
         arithmeticFunction = case op of
             ADD -> (+)
@@ -69,22 +62,19 @@ buildCode (RType op rs2 rs1 rd) registers =
             SRA -> shiftRightArithmetical
             OR -> (.|.)
             AND -> (.&.)
-buildCode (IType op imm rs1 rd) registers =
+
+buildCode (IType op imm rs1 rd) State{registers=registers, pc=pc} =
     nop {operand2 = imm,
-        operand1 = registers !! rs1,
-        destination = resize dest,
-        arithmetic = arithmeticFunction}
+        operand1 = readRegister rs1 registers,
+        fbinary = arithmeticFunction}
     where
-        dest= case op of
-            JALR -> cJUMPREG
-            _ -> resize rd
         arithmeticFunction = case op of
             JALR -> jumpAndLinkReg
-            -- LB ->
-            -- LH ->
-            -- LW ->
-            -- LBU ->
-            -- LHU ->
+            LB -> (+)
+            LH -> (+)
+            LW -> (+)
+            LBU -> (+)
+            LHU -> (+)
             ADDI -> (+)
             SLTI -> setLessThan
             SLTIU -> setLessThanU
@@ -95,15 +85,24 @@ buildCode (IType op imm rs1 rd) registers =
             SRLI -> shiftRightLogical
             SRAI -> shiftRightArithmetical
 
--- updateRegisters :: MachineCode -> State -> State
--- updateRegisters machineCode state = state'
---     where
---         MachineCode{..} = machineCode
---         State{..} = state
---
--- updateRegisters :: MachineCode -> State -> RegisterBank
--- updateRegisters machineCode state = replace rd (arithmetic operand2 operand1) bank
---     where
---         MachineCode{..} = machineCode
---         State{..} = state
---         bank = if (testBit rd 5) then intermediateRegs else registers
+buildCode (SType op imm rs2 rs1) State{registers=registers, pc=pc} =
+    nop {operand3 = imm,
+        operand2 = operand2,
+        operand1 = readRegister rs1 registers,
+        fbinary = arithmeticFunction}
+    where
+        operand2 = case op of
+            SB -> 0
+            SH -> 0
+            SW -> 0
+            _ -> readRegister rs2 registers
+        arithmeticFunction = case op of
+            BEQ -> \o2 o1 -> if (o2 == o1) then (imm + pc) else pc
+            BNE -> \o2 o1 -> if (o2 /= o1) then (imm + pc) else pc
+            BLT -> \o2 o1 -> if (o1 < o2) then (imm + pc) else pc
+            BGE -> \o2 o1 -> if (o2 >= o2) then (imm + pc) else pc
+            BLTU -> \o2 o1 -> if (compareUnsigned o2 o1 (<)) then (imm + pc) else pc
+            BGEU -> \o2 o1 -> if (compareUnsigned o2 o1 (>)) then (imm + pc) else pc
+            SB -> (\o2 o1 -> o2+imm+o1)
+            SH -> (\o2 o1 -> o2+imm+o1)
+            SW -> (\o2 o1 -> o2+imm+o1)
