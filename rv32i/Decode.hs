@@ -3,7 +3,7 @@ module Decode where
 import Clash.Prelude
 import BaseTypes
 import Instructions
-import Parse
+import Fetch
 
 constructImmediate :: InstructionForm -> Immediate
 constructImmediate (IType imm11'0 _ _ _ _) = sign .|. rest

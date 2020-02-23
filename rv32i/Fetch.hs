@@ -1,4 +1,4 @@
-module Parse where
+module Fetch where
 
 import Clash.Prelude
 import BaseTypes

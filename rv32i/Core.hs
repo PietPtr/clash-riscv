@@ -9,5 +9,5 @@ import Data.Char (intToDigit)
 
 import Instructions
 import BaseTypes
-import Parse
+import Fetch
 import Decode
