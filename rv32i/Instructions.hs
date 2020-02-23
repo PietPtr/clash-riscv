@@ -1,6 +1,7 @@
 module Instructions where
 
 import Clash.Prelude
+import qualified Data.List as L
 import BaseTypes
 
 type Destination = RegisterID
@@ -50,11 +51,3 @@ data Instruction =
     | ECALL -- TODO
     | EBREAK -- TODO
     deriving (Show, Eq)
-
--- code :: Unsigned 7 -> Unsigned 3 -> OpCode
--- code 0b0110111 _ = LUI
--- code 0b0010111 _ = AUIPC
--- code 0b1101111 _ = JAL
--- code 0b1100111 0b000 = JALR
--- code 0b1100011 0b000 = BEQ
--- code 0b1100011 0b001 = BNE

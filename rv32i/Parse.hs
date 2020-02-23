@@ -37,8 +37,8 @@ op 4 = 0xfb9ff0ef -- jal	x1,10150
 op 5 = 0x00112623 -- sw 	x1,12(x2)
 op 6 = 0xfec42703 -- lw 	x14,-20(x8)
 op 7 = 0x40f90933 -- sub	x18,x18,x15
-op 8 = 0x05778063 -- beq	a5,s7,10400
-
+op 8 = 0x05778063 -- beq	x15,x23,10400
+op 9 = 0x00010537 -- lui    x10,0x0
 
 extractOpCode :: Unsigned 32 -> Unsigned 7
 extractOpCode instruction = resize $ instruction .&. 0b1111111

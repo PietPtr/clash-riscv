@@ -83,4 +83,14 @@ decode (BType imm12 imm10'5 rs2 rs1 funct3 imm4'1 imm11 opcode) = instructionCon
                 0b101 -> BGE
                 0b110 -> BLTU
                 0b111 -> BGEU
--- decode (UType imm31'12 rd opcode) = instructionConstructor immediate destination
+decode (UType imm31'12 rd opcode) = instructionConstructor immediate rd
+    where
+        immediate = constructImmediate (UType imm31'12 rd opcode)
+        instructionConstructor = case opcode of
+            0b0110111 -> LUI
+            0b0010111 -> AUIPC
+decode (JType imm20 imm10'1 imm11 imm19'12 rd opcode) = instructionConstructor immediate rd
+    where
+        immediate = constructImmediate (JType imm20 imm10'1 imm11 imm19'12 rd opcode)
+        instructionConstructor = case opcode of
+            0b1101111 -> JAL
