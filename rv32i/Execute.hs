@@ -10,7 +10,7 @@ import ALUFunctions
 data State = State
     { pc :: PC
     , registers :: RegisterBank
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, NFDataX, Generic)
 
 nullstate :: State
 nullstate = State {pc=0, registers=emptyregs}
@@ -92,12 +92,12 @@ buildCode (SType op imm rs2 rs1) State{registers=registers, pc=pc} =
         fbinary = arithmeticFunction}
     where
         arithmeticFunction = case op of
-            BEQ -> \o2 o1 -> if (o2 == o1) then (imm + (conv pc)) else (conv pc)
-            BNE -> \o2 o1 -> if (o2 /= o1) then (imm + conv pc) else conv pc
-            BLT -> \o2 o1 -> if (o1 < o2) then (imm + conv pc) else conv pc
-            BGE -> \o2 o1 -> if (o2 >= o2) then (imm + conv pc) else conv pc
-            BLTU -> \o2 o1 -> if (compareUnsigned o2 o1 (<)) then (imm + conv pc) else conv pc
-            BGEU -> \o2 o1 -> if (compareUnsigned o2 o1 (>)) then (imm + conv pc) else conv pc
+            BEQ -> \o2 o1 -> if (o2 == o1) then imm else 0
+            BNE -> \o2 o1 -> if (o2 /= o1) then imm else 0
+            BLT -> \o2 o1 -> if (o1 < o2) then imm else 0
+            BGE -> \o2 o1 -> if (o2 >= o2) then imm else 0
+            BLTU -> \o2 o1 -> if (compareUnsigned o2 o1 (<)) then imm else 0
+            BGEU -> \o2 o1 -> if (compareUnsigned o2 o1 (>)) then imm else 0
             SB -> (\o2 o1 -> imm+o1)
             SH -> (\o2 o1 -> imm+o1)
             SW -> (\o2 o1 -> imm+o1)

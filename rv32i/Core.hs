@@ -5,8 +5,9 @@ import Clash.Prelude
 import qualified Data.List as L
 import qualified Data.Bits as Bits
 
-import Instructions
 import BaseTypes
+
+import Instructions
 import Fetch
 import Decode
 import ALUFunctions
@@ -14,15 +15,51 @@ import Execute
 import Memory
 import Writeback
 
-import Numeric (showHex, showIntAtBase)
-import Data.Char (intToDigit)
+import Debug
 
-showBin x = showIntAtBase 2 intToDigit x ""
 
-run x = out
+-- TODO: Name is unclear because of State
+data SystemState = SystemState
+    { pc :: PC
+    , registers :: RegisterBank
+    , memory :: Memory
+} deriving (Show, NFDataX, Generic)
+
+type Tick = Unsigned 0
+
+initialState = SystemState
+    { pc = 92
+    , registers = testregs
+    , memory = testmem
+    }
+
+core :: SystemState -> Tick -> SystemState
+core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, executed, (memory', memValue), State{pc=pc', registers=registers'})) state'
     where
-        out = trace ("memoried: " L.++ show memoried) writeback nullstate decoded (result executed) (snd memoried)
-        memoried = trace ("executed: " L.++ show executed) memory decoded executed emptymem
-        executed = trace ("decoded: " L.++ show decoded) execute nullstate decoded
-        decoded = trace ("parsed: " L.++ show parsed) decode parsed
-        parsed = trace ("input: " L.++ showBin (op x)) parse (op x)
+        state' = SystemState {pc = pc', registers = registers', memory = memory'}
+
+        State{pc=pc', registers=registers'} = writeback partialState decoded (result executed) memValue
+        (memory', memValue) = memoryAccess decoded executed memory
+        executed = execute partialState decoded
+        decoded = decode parsed
+        parsed = parse instruction
+        instruction :: Unsigned 32 = conv $ memory !! (pc `shiftR` 2)
+
+        partialState = State {pc = pc, registers = registers}
+
+output :: SystemState -> PC
+output SystemState{..} = pc
+
+mooreCore = moore @System core output initialState
+
+topEntity
+    :: Clock System
+    -> Reset System
+    -> Enable System
+    -> Signal System Tick
+    -> Signal System PC
+topEntity = exposeClockResetEnable mooreCore
+
+sim n = mapM_ print $ L.take n $ simulate @System mooreCore [1..]
+
+forever = 99999999999999999999

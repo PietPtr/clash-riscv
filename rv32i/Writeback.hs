@@ -37,7 +37,7 @@ updatepc pc (UType op _ _) execResult = case op of
     JAL -> conv execResult
 
 branchOrIncrement :: PC -> RegisterValue -> PC
-branchOrIncrement pc value = pc + (if (value == 0) then 4 else conv value)
+branchOrIncrement pc value = (if (value == 0) then (pc + 4) else (pc + conv value))
 
 writeRegister :: RegisterBank -> RegisterID -> RegisterValue -> RegisterBank
 writeRegister bank 0 _ = bank
