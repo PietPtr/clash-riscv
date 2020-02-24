@@ -11,6 +11,8 @@ type RegisterBank = Vec 32 RegisterValue
 
 type PC = RegisterValue
 
+type Memory = Vec 256 RegisterValue
+type Address = Unsigned 8
 
 
 -- Utility conversion function...
@@ -31,5 +33,9 @@ op 11 = 0xfa0680e7-- jalr   -96(x13)
 op 12 = 0x0e042783-- lw     x15,0(x8)
 
 emptyregs =
-    0:>0:>0:>5:>0:>0:>0:>0:>0:>0:>0:>0:>0:>197:>0:>0:>
+    0:>69:>0:>5:>0:>0:>0:>0:>64:>0:>0:>0:>0:>197:>0:>0:>
     0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>Nil
+
+emptymem :: Memory
+emptymem = replace 44 0x789abcde mem
+    where mem = replicate d256 0

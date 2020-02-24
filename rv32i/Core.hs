@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Core where
 
 import Clash.Prelude
@@ -10,14 +11,16 @@ import Fetch
 import Decode
 import ALUFunctions
 import Execute
+import Memory
 
 import Numeric (showHex, showIntAtBase)
 import Data.Char (intToDigit)
 
 showBin x = showIntAtBase 2 intToDigit x ""
 
-run x = result
+run x = out
     where
-        result = trace (show decoded) execute nullstate decoded
-        decoded = trace (show parsed) decode parsed
-        parsed = trace (showBin (op x)) parse (op x)
+        out = trace ("executed: " L.++ show executed) memory decoded executed emptymem
+        executed = trace ("decoded: " L.++ show decoded) execute nullstate decoded
+        decoded = trace ("parsed: " L.++ show parsed) decode parsed
+        parsed = trace ("input: " L.++ showBin (op x)) parse (op x)

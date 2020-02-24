@@ -28,8 +28,14 @@ nop = ControlCode
     , fbinary = (\a b -> a)
     }
 
-execute :: State -> Instruction -> RegisterValue
-execute state instruction = result
+-- TODO: Names are too vague
+data ExecutionResult = ExecutionResult
+    { result :: RegisterValue
+    , value :: RegisterValue
+    } deriving (Show)
+
+execute :: State -> Instruction -> ExecutionResult
+execute state instruction = ExecutionResult{result=result, value=operand2 }
     where
         ControlCode{..} = buildCode instruction state
         result = fbinary operand2 operand1
@@ -80,15 +86,15 @@ buildCode (IType op imm rs1 rd) State{registers=registers, pc=pc} =
             SRAI -> shiftRightArithmetical
 
 buildCode (SType op imm rs2 rs1) State{registers=registers, pc=pc} =
-    nop {operand2 = operand2,
+    nop {operand2 = readRegister rs2 registers,
         operand1 = readRegister rs1 registers,
         fbinary = arithmeticFunction}
     where
-        operand2 = case op of
-            SB -> 0
-            SH -> 0
-            SW -> 0
-            _ -> readRegister rs2 registers
+        -- operand2 = case op of
+        --     SB -> 0
+        --     SH -> 0
+        --     SW -> 0
+        --     _ -> readRegister rs2 registers
         arithmeticFunction = case op of
             BEQ -> \o2 o1 -> if (o2 == o1) then (imm + pc) else pc
             BNE -> \o2 o1 -> if (o2 /= o1) then (imm + pc) else pc
@@ -96,9 +102,9 @@ buildCode (SType op imm rs2 rs1) State{registers=registers, pc=pc} =
             BGE -> \o2 o1 -> if (o2 >= o2) then (imm + pc) else pc
             BLTU -> \o2 o1 -> if (compareUnsigned o2 o1 (<)) then (imm + pc) else pc
             BGEU -> \o2 o1 -> if (compareUnsigned o2 o1 (>)) then (imm + pc) else pc
-            SB -> (\o2 o1 -> o2+imm+o1)
-            SH -> (\o2 o1 -> o2+imm+o1)
-            SW -> (\o2 o1 -> o2+imm+o1)
+            SB -> (\o2 o1 -> imm+o1)
+            SH -> (\o2 o1 -> imm+o1)
+            SW -> (\o2 o1 -> imm+o1)
 
 buildCode (UType op imm rd) State{registers=registers, pc=pc} =
     nop {operand2 = imm,
