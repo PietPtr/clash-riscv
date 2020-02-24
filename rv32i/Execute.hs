@@ -29,6 +29,7 @@ nop = ControlCode
     }
 
 -- TODO: Names are too vague
+-- TODO: Change type to something less general
 data ExecutionResult = ExecutionResult
     { result :: RegisterValue
     , value :: RegisterValue
@@ -90,18 +91,13 @@ buildCode (SType op imm rs2 rs1) State{registers=registers, pc=pc} =
         operand1 = readRegister rs1 registers,
         fbinary = arithmeticFunction}
     where
-        -- operand2 = case op of
-        --     SB -> 0
-        --     SH -> 0
-        --     SW -> 0
-        --     _ -> readRegister rs2 registers
         arithmeticFunction = case op of
-            BEQ -> \o2 o1 -> if (o2 == o1) then (imm + pc) else pc
-            BNE -> \o2 o1 -> if (o2 /= o1) then (imm + pc) else pc
-            BLT -> \o2 o1 -> if (o1 < o2) then (imm + pc) else pc
-            BGE -> \o2 o1 -> if (o2 >= o2) then (imm + pc) else pc
-            BLTU -> \o2 o1 -> if (compareUnsigned o2 o1 (<)) then (imm + pc) else pc
-            BGEU -> \o2 o1 -> if (compareUnsigned o2 o1 (>)) then (imm + pc) else pc
+            BEQ -> \o2 o1 -> if (o2 == o1) then (imm + (conv pc)) else (conv pc)
+            BNE -> \o2 o1 -> if (o2 /= o1) then (imm + conv pc) else conv pc
+            BLT -> \o2 o1 -> if (o1 < o2) then (imm + conv pc) else conv pc
+            BGE -> \o2 o1 -> if (o2 >= o2) then (imm + conv pc) else conv pc
+            BLTU -> \o2 o1 -> if (compareUnsigned o2 o1 (<)) then (imm + conv pc) else conv pc
+            BGEU -> \o2 o1 -> if (compareUnsigned o2 o1 (>)) then (imm + conv pc) else conv pc
             SB -> (\o2 o1 -> imm+o1)
             SH -> (\o2 o1 -> imm+o1)
             SW -> (\o2 o1 -> imm+o1)
@@ -112,5 +108,5 @@ buildCode (UType op imm rd) State{registers=registers, pc=pc} =
     where
         arithmeticFunction = case op of
             LUI -> loadUpperImmediate
-            AUIPC -> loadUpperImmediate
-            JAL -> \_ _ -> pc + imm
+            AUIPC -> \o2 o1 -> loadUpperImmediate o2 o1 + (conv pc)
+            JAL -> \_ _ -> (conv pc) + imm

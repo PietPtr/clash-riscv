@@ -9,11 +9,11 @@ type RegisterValue = Signed 32
 type RegisterID = Unsigned 5 -- TODO: Maybe it's better form to make this of type Index?
 type RegisterBank = Vec 32 RegisterValue
 
-type PC = RegisterValue
 
 type Memory = Vec 256 RegisterValue
 type Address = Unsigned 8
 
+type PC = Unsigned 32
 
 -- Utility conversion function...
 conv = (fromInteger . toInteger)
@@ -33,8 +33,8 @@ op 11 = 0xfa0680e7-- jalr   -96(x13)
 op 12 = 0x0e042783-- lw     x15,0(x8)
 
 emptyregs =
-    0:>69:>0:>5:>0:>0:>0:>0:>64:>0:>0:>0:>0:>197:>0:>0:>
-    0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>0:>Nil
+    0:>1:>2:>3:>4:>5:>6:>7:>8:>9:>10:>11:>12:>13:>14:>15:>
+    16:>17:>18:>19:>20:>21:>22:>23:>24:>25:>26:>27:>28:>29:>30:>31:>Nil
 
 emptymem :: Memory
 emptymem = replace 44 0x789abcde mem

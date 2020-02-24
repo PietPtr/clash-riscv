@@ -23,10 +23,13 @@ memory (IType LHU _ _ _) ExecutionResult{result=address} mem = (mem, zeroExtend 
 memory (IType LW _ _ _) ExecutionResult{result=address} mem = (mem, readMem (conv address) mem)
 
 -- TODO: This may not be the exact behaviour risc-v is going for, since I assumed sign extension, perhaps they mean overriding...
-memory (SType SB _ _ _) ExecutionResult{result=address, value=value} mem = (writeMem (conv address) (signExtend byte) mem, 0)
+memory (SType SB _ _ _) ExecutionResult{result=address, value=value} mem =
+    (writeMem (conv address) (signExtend byte) mem, 0)
     where byte :: Signed 8 = truncateB $ value
-memory (SType SH _ _ _) ExecutionResult{result=address, value=value} mem = (writeMem (conv address) (signExtend halfword) mem, 0)
+memory (SType SH _ _ _) ExecutionResult{result=address, value=value} mem =
+    (writeMem (conv address) (signExtend halfword) mem, 0)
     where halfword :: Signed 16 = truncateB $ value
-memory (SType SW _ _ _) ExecutionResult{result=address, value=value} mem = (writeMem (conv address) value mem, 0)
+memory (SType SW _ _ _) ExecutionResult{result=address, value=value} mem =
+    (writeMem (conv address) value mem, 0)
 
 memory _ _ mem = (mem, 0)
