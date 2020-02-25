@@ -28,7 +28,7 @@ data SystemState = SystemState
 type Tick = Unsigned 0
 
 initialState = SystemState
-    { pc = 92
+    { pc = 84
     , registers = testregs
     , memory = testmem
     }
@@ -48,7 +48,7 @@ core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, execu
         partialState = State {pc = pc, registers = registers}
 
 output :: SystemState -> PC
-output SystemState{..} = pc
+output SystemState{..} = pc `shiftR` 2
 
 mooreCore = moore @System core output initialState
 
