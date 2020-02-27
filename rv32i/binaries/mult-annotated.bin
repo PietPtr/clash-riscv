@@ -1,0 +1,40 @@
+fd010113 addi sp,sp,-48
+02812623 sw s0,44(sp)
+03010413 addi s0,sp,48
+fca42e23 sw a0,-36(s0)
+fcb42c23 sw a1,-40(s0)
+fe042623 sw zero,-20(s0)
+0200006f j 38 <.L2>
+fec42703 lw a4,-20(s0)
+fd842783 lw a5,-40(s0)
+00f707b3 add a5,a4,a5
+fef42623 sw a5,-20(s0)
+fdc42783 lw a5,-36(s0)
+fff78793 addi a5,a5,-1
+fcf42e23 sw a5,-36(s0)
+fdc42783 lw a5,-36(s0)
+fef040e3 bgtz a5,1c <.L3>
+fec42783 lw a5,-20(s0)
+00078513 mv a0,a5
+02c12403 lw s0,44(sp)
+03010113 addi sp,sp,48
+00008067 ret
+fe010113 addi sp,sp,-32
+00112e23 sw ra,28(sp)
+00812c23 sw s0,24(sp)
+02010413 addi s0,sp,32
+00500793 li a5,5
+fef42623 sw a5,-20(s0)
+00300793 li a5,3
+fef42423 sw a5,-24(s0)
+fe842583 lw a1,-24(s0)
+fec42503 lw a0,-20(s0)
+00000097 auipc ra,0x0
+000080e7 jalr ra # 7c <main+0x28>
+fea42223 sw a0,-28(s0)
+00000793 li a5,0
+00078513 mv a0,a5
+01c12083 lw ra,28(sp)
+01812403 lw s0,24(sp)
+02010113 addi sp,sp,32
+00008067 ret
