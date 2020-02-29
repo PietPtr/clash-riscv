@@ -34,7 +34,8 @@ initialState = SystemState
     }
 
 core :: SystemState -> Tick -> SystemState
-core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, executed, (memory', memValue), State{pc=pc', registers=registers'})) state'
+core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, executed, (memory', memValue), State{pc=pc', registers=registers'}))
+    state'
     where
         state' = SystemState {pc = pc', registers = registers', memory = memory'}
 
@@ -46,6 +47,11 @@ core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, execu
         instruction :: Unsigned 32 = conv $ memory !! (pc `shiftR` 2)
 
         partialState = State {pc = pc, registers = registers}
+
+
+
+
+
 
 output :: SystemState -> PC
 output SystemState{..} = pc `shiftR` 2
