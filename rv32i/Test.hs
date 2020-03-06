@@ -28,7 +28,7 @@ state mem = SystemState
     }
 
 
-sim n mem = L.foldl (\memoire _ -> core memoire 0) (state mem) [0..n]
+sim n mem = L.foldl (\m _ -> core m 0) (state mem) [0..n]
 
 main a = do
     out <- Test.sim a <$> testMem
