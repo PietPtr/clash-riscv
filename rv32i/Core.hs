@@ -18,7 +18,7 @@ import Writeback
 import Debug
 
 
--- TODO: Name is unclear because of State
+-- TODO: Name is unclear because of InternalRegs
 data SystemState = SystemState
     { pc :: PC
     , registers :: RegisterBank
@@ -34,19 +34,19 @@ initialState = SystemState
     }
 
 core :: SystemState -> Tick -> SystemState
-core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, executed, (memory', memValue), State{pc=pc', registers=registers'}))
+core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, executed, (memory', memValue), InternalRegs{pc=pc', registers=registers'}))
     state'
     where
         state' = SystemState {pc = pc', registers = registers', memory = memory'}
 
-        State{pc=pc', registers=registers'} = writeback partialState decoded (result executed) memValue
+        InternalRegs{pc=pc', registers=registers'} = writeback partialState decoded (result executed) memValue
         (memory', memValue) = memoryAccess decoded executed memory
         executed = execute partialState decoded
         decoded = decode parsed
         parsed = parse instruction
         instruction :: Unsigned 32 = conv $ memory !! (pc `shiftR` 2)
 
-        partialState = State {pc = pc, registers = registers}
+        partialState = InternalRegs {pc = pc, registers = registers}
 
 
 

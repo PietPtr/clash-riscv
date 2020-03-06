@@ -6,11 +6,11 @@ import BaseTypes
 import Execute
 import Instructions
 
-writeback :: State -> Instruction -> RegisterValue -> RegisterValue -> State
+writeback :: InternalRegs -> Instruction -> RegisterValue -> RegisterValue -> InternalRegs
 writeback state instruction execResult memValue = state'
     where
-        State{..} = state
-        state' = State{pc = pc', registers = registers'}
+        InternalRegs{..} = state
+        state' = InternalRegs{pc = pc', registers = registers'}
 
         pc' = updatepc pc instruction execResult
         registers' = updateRegisters registers instruction execResult memValue pc

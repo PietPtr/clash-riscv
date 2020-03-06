@@ -1,8 +1,11 @@
 module Fetch where
 
 import Clash.Prelude
+import Control.Exception
+import qualified Data.List as L
 import BaseTypes
 import Instructions
+
 
 type OpCodeField = Unsigned 7
 type Funct7 = Unsigned 7
@@ -115,3 +118,4 @@ parse instruction = formed
             -- 0b0001111 -> -- TODO: FENCE, Zifencei
             0b1110011 -> parseIType instruction
             -- TODO: What happens when an unknown instruction is parsed?
+            _ -> error ("Unknown opcode " L.++ (show opcode))
