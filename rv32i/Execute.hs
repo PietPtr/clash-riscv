@@ -28,11 +28,9 @@ nop = ControlCode
     , fbinary = (\a b -> a)
     }
 
--- TODO: Names are too vague
--- TODO: Change type to something less general
 data ExecutionResult = ExecutionResult
     { result :: RegisterValue
-    , op2 :: RegisterValue -- TODO: How can I give this a better name?
+    , op2 :: RegisterValue -- TODO: How can I give this a better name? (operand2 is already taken)
     } deriving (Show)
 
 execute :: InternalRegs -> Instruction -> ExecutionResult

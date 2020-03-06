@@ -18,7 +18,6 @@ import Writeback
 import Debug
 
 
--- TODO: Name is unclear because of InternalRegs
 data SystemState = SystemState
     { pc :: PC
     , registers :: RegisterBank

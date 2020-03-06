@@ -117,5 +117,4 @@ parse instruction = formed
             0b0110011 -> parseRType instruction
             -- 0b0001111 -> -- TODO: FENCE, Zifencei
             0b1110011 -> parseIType instruction
-            -- TODO: What happens when an unknown instruction is parsed?
             _ -> error ("Unknown opcode " L.++ (show opcode))
