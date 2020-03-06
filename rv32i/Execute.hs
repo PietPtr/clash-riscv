@@ -32,11 +32,11 @@ nop = ControlCode
 -- TODO: Change type to something less general
 data ExecutionResult = ExecutionResult
     { result :: RegisterValue
-    , value :: RegisterValue
+    , op2 :: RegisterValue -- TODO: How can I give this a better name?
     } deriving (Show)
 
 execute :: State -> Instruction -> ExecutionResult
-execute state instruction = ExecutionResult{result=result, value=operand2 }
+execute state instruction = ExecutionResult{result=result, op2=operand2 }
     where
         ControlCode{..} = buildCode instruction state
         result = fbinary operand2 operand1

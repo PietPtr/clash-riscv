@@ -50,9 +50,6 @@ core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, execu
 
 
 
-
-
-
 output :: SystemState -> PC
 output SystemState{..} = pc `shiftR` 2
 
@@ -66,6 +63,6 @@ topEntity
     -> Signal System PC
 topEntity = exposeClockResetEnable mooreCore
 
-sim n = mapM_ print $ L.take n $ simulate @System mooreCore [1..]
+sim n = mapM_ print $ L.take n $ simulate @System mooreCore [0,0..]
 
 forever = 99999999999999999999
