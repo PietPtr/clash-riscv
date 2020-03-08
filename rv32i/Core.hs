@@ -33,7 +33,7 @@ initialState = SystemState
     }
 
 core :: SystemState -> Tick -> SystemState
-core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, executed, (memory', memValue), InternalRegs{pc=pc', registers=registers'}))
+core SystemState{..} _ = trace (showProcess (instruction, fetched, decoded, executed, (memory', memValue), InternalRegs{pc=pc', registers=registers'}))
     state'
     where
         state' = SystemState {pc = pc', registers = registers', memory = memory'}
@@ -41,8 +41,8 @@ core SystemState{..} _ = trace (showProcess (instruction, parsed, decoded, execu
         InternalRegs{pc=pc', registers=registers'} = writeback partialState decoded (result executed) memValue
         (memory', memValue) = memoryAccess decoded executed memory
         executed = execute partialState decoded
-        decoded = decode parsed
-        parsed = parse instruction
+        decoded = decode fetched
+        fetched = fetch instruction
         instruction :: Unsigned 32 = conv $ memory !! (pc `shiftR` 2)
 
         partialState = InternalRegs {pc = pc, registers = registers}
