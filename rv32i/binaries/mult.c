@@ -11,6 +11,3 @@ int main() {
     int a = 5, b = 3;
     int c = mult(a, b);
 }
-
-// void __register_exitproc(void) { }
-// void __libc_init_array(void) { }

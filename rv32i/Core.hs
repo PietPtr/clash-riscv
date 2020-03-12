@@ -62,6 +62,6 @@ topEntity
     -> Signal System PC
 topEntity = exposeClockResetEnable mooreCore
 
-sim n = mapM_ print $ L.take n $ simulate @System mooreCore [0,0..]
+sim n = mapM_ print $ L.take n $ simulate @System mooreCore (cycle [0])
 
 forever = 99999999999999999999

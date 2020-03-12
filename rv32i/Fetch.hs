@@ -6,8 +6,39 @@ import qualified Data.List as L
 import BaseTypes
 import Instructions
 
+{--
+These are the opcodes as defined in table 24.1 of the RISC-V spec. The names are
+the same as in the spec, but to resolve name issues the suffix _CODE is used.
+--}
+data Opcode
+    = LUI_CODE
+    | AUIPC_CODE
+    | JAL_CODE
+    | JALR_CODE
+    | BRANCH
+    | LOAD
+    | STORE
+    | OP_IMM
+    | OP
+    | SYSTEM
+    deriving (Show, Eq)
 
-type OpCodeField = Unsigned 7
+instance BitMapping Opcode where
+    fromBits code = case code of
+        0b0110111 -> LUI_CODE
+        0b0010111 -> AUIPC_CODE
+        0b1101111 -> JAL_CODE
+        0b1100111 -> JALR_CODE
+        0b1100011 -> BRANCH
+        0b0000011 -> LOAD
+        0b0100011 -> STORE
+        0b0010011 -> OP_IMM
+        0b0110011 -> OP
+        0b1110011 -> SYSTEM
+        _ -> error ("Unknown opcode " L.++ (show code))
+
+
+type OpCodeField = Opcode -- TODO: unnecessary, rename
 type Funct7 = Unsigned 7
 type Funct3 = Unsigned 3
 
@@ -33,8 +64,8 @@ data InstructionForm =
     | JTypeForm (Imm20) (Imm10'1) (Imm11) (Imm19'12) RegisterID OpCodeField
     deriving (Show, Eq)
 
-extractOpCode :: Unsigned 32 -> Unsigned 7
-extractOpCode instruction = resize $ instruction .&. 0b1111111
+extractOpCode :: Unsigned 32 -> Opcode
+extractOpCode instruction = fromBits $ instruction .&. 0b1111111
 
 funct3_shift = -12
 funct7_shift = -25
@@ -106,15 +137,14 @@ fetch instruction = formed
     where
         opcode = extractOpCode instruction
         formed = case opcode of
-            0b0110111 -> fetchUType instruction
-            0b0010111 -> fetchUType instruction
-            0b1101111 -> fetchJType instruction
-            0b1100111 -> fetchIType instruction
-            0b1100011 -> fetchBType instruction
-            0b0000011 -> fetchIType instruction
-            0b0100011 -> fetchSType instruction
-            0b0010011 -> fetchIType instruction
-            0b0110011 -> fetchRType instruction
+            LUI_CODE    -> fetchUType instruction
+            AUIPC_CODE  -> fetchUType instruction
+            JAL_CODE    -> fetchJType instruction
+            JALR_CODE   -> fetchIType instruction
+            BRANCH      -> fetchBType instruction
+            LOAD        -> fetchIType instruction
+            STORE       -> fetchSType instruction
+            OP_IMM      -> fetchIType instruction
+            OP          -> fetchRType instruction
+            SYSTEM      -> fetchIType instruction
             -- 0b0001111 -> -- TODO: FENCE, Zifencei
-            0b1110011 -> fetchIType instruction
-            _ -> error ("Unknown opcode " L.++ (show opcode))
