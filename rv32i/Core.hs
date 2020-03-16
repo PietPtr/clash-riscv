@@ -19,17 +19,17 @@ import Debug
 
 
 data SystemState = SystemState
-    { pc :: PC
+    { pc        :: PC
     , registers :: RegisterBank
-    , memory :: Memory
+    , memory    :: Memory
 } deriving (Show, NFDataX, Generic)
 
 type Tick = Unsigned 0
 
 initialState = SystemState
-    { pc = 84
+    { pc        = 84
     , registers = testregs
-    , memory = testmem
+    , memory    = testmem
     }
 
 core :: SystemState -> Tick -> SystemState
@@ -38,14 +38,14 @@ core SystemState{..} _ = trace (showProcess (instruction, fetched, decoded, exec
     where
         state' = SystemState {pc = pc', registers = registers', memory = memory'}
 
-        InternalRegs{pc=pc', registers=registers'} = writeback partialState decoded (result executed) memValue
+        InternalRegs{pc=pc', registers=registers'} = writeback internalRegs decoded (result executed) memValue
         (memory', memValue) = memoryAccess decoded executed memory
-        executed = execute partialState decoded
+        executed = execute decoded registers pc
         decoded = decode fetched
         fetched = fetch instruction
         instruction :: Unsigned 32 = conv $ memory !! (pc `shiftR` 2)
 
-        partialState = InternalRegs {pc = pc, registers = registers}
+        internalRegs = InternalRegs {pc = pc, registers = registers}
 
 
 

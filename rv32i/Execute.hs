@@ -33,10 +33,10 @@ data ExecutionResult = ExecutionResult
     , op2    :: RegisterValue -- TODO: How can I give this a better name? (operand2 is already taken)
     } deriving (Show)
 
-execute :: InternalRegs -> Instruction -> ExecutionResult
-execute state instruction = ExecutionResult{result = result, op2 = operand2 }
+execute :: Instruction -> RegisterBank -> PC -> ExecutionResult
+execute instruction registers pc = ExecutionResult{result = result, op2 = operand2 }
     where
-        ControlCode{..} = buildCode instruction state
+        ControlCode{..} = buildCode instruction registers pc
         result = fbinary operand2 operand1
 
 
@@ -44,8 +44,9 @@ readRegister :: RegisterID -> RegisterBank -> RegisterValue
 readRegister 0 _ = 0
 readRegister reg bank = bank !! reg
 
-buildCode :: Instruction -> InternalRegs -> ControlCode
-buildCode (RType op rs2 rs1 rd) InternalRegs{registers = registers, pc = pc} =
+
+buildCode :: Instruction -> RegisterBank -> PC -> ControlCode
+buildCode (RType op rs2 rs1 rd) registers pc =
     ControlCode
         { operand2 = readRegister rs2 registers
         , operand1 = readRegister rs1 registers
@@ -63,7 +64,7 @@ buildCode (RType op rs2 rs1 rd) InternalRegs{registers = registers, pc = pc} =
             OR   -> (.|.)
             AND  -> (.&.)
 
-buildCode (IType op imm rs1 rd) InternalRegs{registers = registers, pc = pc} =
+buildCode (IType op imm rs1 rd) registers pc =
     ControlCode
         { operand2 = imm
         , operand1 = readRegister rs1 registers
@@ -86,7 +87,7 @@ buildCode (IType op imm rs1 rd) InternalRegs{registers = registers, pc = pc} =
             SRLI  -> shiftRightLogical
             SRAI  -> shiftRightArithmetical
 
-buildCode (SType op imm rs2 rs1) InternalRegs{registers = registers, pc = pc} =
+buildCode (SType op imm rs2 rs1) registers pc =
     ControlCode
         { operand2 = readRegister rs2 registers
         , operand1 = readRegister rs1 registers
@@ -103,7 +104,7 @@ buildCode (SType op imm rs2 rs1) InternalRegs{registers = registers, pc = pc} =
             SH   -> \o2 o1 -> imm+o1
             SW   -> \o2 o1 -> imm+o1
 
-buildCode (UType op imm rd) InternalRegs{registers=registers, pc=pc} =
+buildCode (UType op imm rd) registers pc =
     nop { operand2 = imm
         , fbinary  = arithmeticFunction}
     where
