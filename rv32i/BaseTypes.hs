@@ -8,19 +8,17 @@ import qualified Debug.Trace
 trace = Debug.Trace.trace
 
 type RegisterValue = Signed 32
-type RegisterID = Unsigned 5 -- TODO: Maybe it's better form to make this of type Index?
-type RegisterBank = Vec 32 RegisterValue
+type RegisterID    = Unsigned 5 -- TODO: Maybe it's better form to make this of type Index?
+type RegisterBank  = Vec 32 RegisterValue
 
-type Memory = Vec 256 RegisterValue
-type Address = Unsigned 8
-
-type PC = Address
+type Memory        = Vec 256 RegisterValue
+type Address       = Unsigned 8
+type PC            = Address
 
 -- Utility conversion function...
 conv = (fromInteger . toInteger)
 
 emptyregs = replicate d32 0
-
 emptymem = replicate d256 0
 
 -- Classes

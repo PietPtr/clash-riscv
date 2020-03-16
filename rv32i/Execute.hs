@@ -8,7 +8,7 @@ import Instructions
 import ALUFunctions
 
 data InternalRegs = InternalRegs
-    { pc :: PC
+    { pc        :: PC
     , registers :: RegisterBank
     } deriving (Show, Eq, NFDataX, Generic)
 
@@ -18,23 +18,23 @@ nullstate = InternalRegs {pc=0, registers=emptyregs}
 data ControlCode = ControlCode
     { operand2 :: RegisterValue
     , operand1 :: RegisterValue
-    , fbinary :: (RegisterValue -> RegisterValue -> RegisterValue)
+    , fbinary  :: RegisterValue -> RegisterValue -> RegisterValue
     }
 
 nop :: ControlCode
 nop = ControlCode
     { operand2 = 0
     , operand1 = 0
-    , fbinary = (\a b -> a)
+    , fbinary  = (\a b -> a)
     }
 
 data ExecutionResult = ExecutionResult
     { result :: RegisterValue
-    , op2 :: RegisterValue -- TODO: How can I give this a better name? (operand2 is already taken)
+    , op2    :: RegisterValue -- TODO: How can I give this a better name? (operand2 is already taken)
     } deriving (Show)
 
 execute :: InternalRegs -> Instruction -> ExecutionResult
-execute state instruction = ExecutionResult{result=result, op2=operand2 }
+execute state instruction = ExecutionResult{result = result, op2 = operand2 }
     where
         ControlCode{..} = buildCode instruction state
         result = fbinary operand2 operand1
@@ -45,66 +45,69 @@ readRegister 0 _ = 0
 readRegister reg bank = bank !! reg
 
 buildCode :: Instruction -> InternalRegs -> ControlCode
-buildCode (RType op rs2 rs1 rd) InternalRegs{registers=registers, pc=pc} =
-    nop {operand2 = readRegister rs2 registers,
-        operand1 = readRegister rs1 registers,
-        fbinary = arithmeticFunction}
+buildCode (RType op rs2 rs1 rd) InternalRegs{registers = registers, pc = pc} =
+    ControlCode
+        { operand2 = readRegister rs2 registers
+        , operand1 = readRegister rs1 registers
+        , fbinary  = arithmeticFunction }
     where
         arithmeticFunction = case op of
-            ADD -> (+)
-            SUB -> (-)
-            SLL -> shiftLeftLogical
-            SLT -> setLessThan
+            ADD  -> (+)
+            SUB  -> (-)
+            SLL  -> shiftLeftLogical
+            SLT  -> setLessThan
             SLTU -> setLessThanU
-            XOR -> xor
-            SRL -> shiftRightLogical
-            SRA -> shiftRightArithmetical
-            OR -> (.|.)
-            AND -> (.&.)
+            XOR  -> xor
+            SRL  -> shiftRightLogical
+            SRA  -> shiftRightArithmetical
+            OR   -> (.|.)
+            AND  -> (.&.)
 
-buildCode (IType op imm rs1 rd) InternalRegs{registers=registers, pc=pc} =
-    nop {operand2 = imm,
-        operand1 = readRegister rs1 registers,
-        fbinary = arithmeticFunction}
+buildCode (IType op imm rs1 rd) InternalRegs{registers = registers, pc = pc} =
+    ControlCode
+        { operand2 = imm
+        , operand1 = readRegister rs1 registers
+        , fbinary  = arithmeticFunction }
     where
         arithmeticFunction = case op of
-            JALR -> jumpAndLinkReg
-            LB -> (+)
-            LH -> (+)
-            LW -> (+)
-            LBU -> (+)
-            LHU -> (+)
-            ADDI -> (+)
-            SLTI -> setLessThan
+            JALR  -> jumpAndLinkReg
+            LB    -> (+)
+            LH    -> (+)
+            LW    -> (+)
+            LBU   -> (+)
+            LHU   -> (+)
+            ADDI  -> (+)
+            SLTI  -> setLessThan
             SLTIU -> setLessThanU
-            XORI -> xor
-            ORI -> (.|.)
-            ANDI -> (.&.)
-            SLLI -> shiftLeftLogical
-            SRLI -> shiftRightLogical
-            SRAI -> shiftRightArithmetical
+            XORI  -> xor
+            ORI   -> (.|.)
+            ANDI  -> (.&.)
+            SLLI  -> shiftLeftLogical
+            SRLI  -> shiftRightLogical
+            SRAI  -> shiftRightArithmetical
 
-buildCode (SType op imm rs2 rs1) InternalRegs{registers=registers, pc=pc} =
-    nop {operand2 = readRegister rs2 registers,
-        operand1 = readRegister rs1 registers,
-        fbinary = arithmeticFunction}
+buildCode (SType op imm rs2 rs1) InternalRegs{registers = registers, pc = pc} =
+    ControlCode
+        { operand2 = readRegister rs2 registers
+        , operand1 = readRegister rs1 registers
+        , fbinary  = arithmeticFunction }
     where
         arithmeticFunction = case op of
-            BEQ -> \o2 o1 -> if (o2 == o1) then imm else 0
-            BNE -> \o2 o1 -> if (o2 /= o1) then imm else 0
-            BLT -> \o2 o1 -> if (o1 < o2) then imm else 0
-            BGE -> \o2 o1 -> if (o2 >= o2) then imm else 0
+            BEQ  -> \o2 o1 -> if (o2 == o1) then imm else 0
+            BNE  -> \o2 o1 -> if (o2 /= o1) then imm else 0
+            BLT  -> \o2 o1 -> if (o1 < o2) then imm else 0
+            BGE  -> \o2 o1 -> if (o2 >= o2) then imm else 0
             BLTU -> \o2 o1 -> if (compareUnsigned o2 o1 (<)) then imm else 0
             BGEU -> \o2 o1 -> if (compareUnsigned o2 o1 (>)) then imm else 0
-            SB -> (\o2 o1 -> imm+o1)
-            SH -> (\o2 o1 -> imm+o1)
-            SW -> (\o2 o1 -> imm+o1)
+            SB   -> \o2 o1 -> imm+o1
+            SH   -> \o2 o1 -> imm+o1
+            SW   -> \o2 o1 -> imm+o1
 
 buildCode (UType op imm rd) InternalRegs{registers=registers, pc=pc} =
-    nop {operand2 = imm,
-        fbinary = arithmeticFunction}
+    nop { operand2 = imm
+        , fbinary  = arithmeticFunction}
     where
         arithmeticFunction = case op of
-            LUI -> loadUpperImmediate
+            LUI   -> loadUpperImmediate
             AUIPC -> \o2 o1 -> loadUpperImmediate o2 o1 + (conv pc)
-            JAL -> \_ _ -> (conv pc) + imm
+            JAL   -> \_ _ -> (conv pc) + imm

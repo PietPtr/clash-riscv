@@ -4,13 +4,13 @@ import Clash.Prelude
 import qualified Data.List as L
 import BaseTypes
 
-type Destination = RegisterID
-type Source = RegisterID
-type Immediate = Signed 32
-type ShiftAmount = Unsigned 5
+type Destination    = RegisterID
+type Source         = RegisterID
+type Immediate      = Signed 32
+type ShiftAmount    = Unsigned 5
 
-data RInstruction =
-      ADD
+data RInstruction
+    = ADD
     | SUB
     | SLL
     | SLT
@@ -22,8 +22,8 @@ data RInstruction =
     | AND
     deriving (Show)
 
-data IInstruction =
-      JALR
+data IInstruction
+    = JALR
     | LB
     | LH
     | LW
@@ -40,8 +40,8 @@ data IInstruction =
     | SRAI
     deriving (Show)
 
-data SInstruction =
-      BEQ
+data SInstruction
+    = BEQ
     | BNE
     | BLT
     | BGE
@@ -52,14 +52,14 @@ data SInstruction =
     | SW
     deriving (Show)
 
-data UInstruction =
-      LUI
+data UInstruction
+    = LUI
     | AUIPC
     | JAL
     deriving (Show)
 
-data Instruction =
-      RType RInstruction Source Source Destination
+data Instruction
+    = RType RInstruction Source Source Destination
     | IType IInstruction Immediate Source Destination
     | SType SInstruction Immediate Source Source
     | UType UInstruction Immediate Destination
