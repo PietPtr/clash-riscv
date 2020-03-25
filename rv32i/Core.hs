@@ -47,7 +47,8 @@ core SystemState{..} _ = trace (showProcess (instruction, fetched, decoded, exec
 
         internalRegs = InternalRegs {pc = pc, registers = registers}
 
-
+output :: SystemState -> PC
+output SystemState{..} = pc `shiftR` 2
 
 mooreCore = moore @System core output initialState
 
