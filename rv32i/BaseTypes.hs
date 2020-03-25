@@ -15,6 +15,20 @@ type Memory        = Vec 256 RegisterValue
 type Address       = Unsigned 8
 type PC            = Address
 
+type WriteData =  Maybe (Address, RegisterValue)
+type Output = (Address, WriteData)
+
+data Phase
+    = Executing
+    | Memory
+    deriving (Show, Eq, Generic, NFDataX)
+
+data SystemState = SystemState
+    { pc        :: PC
+    , registers :: RegisterBank
+    , phase     :: Phase
+    } deriving (Show, Generic, NFDataX)
+
 -- Utility conversion function...
 conv = (fromInteger . toInteger)
 

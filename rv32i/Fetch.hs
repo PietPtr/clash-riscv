@@ -21,6 +21,7 @@ data Opcode
     | OP_IMM
     | OP
     | SYSTEM
+    | UNKNOWN_CODE
     deriving (Show, Eq)
 
 instance BitMapping Opcode where
@@ -35,7 +36,7 @@ instance BitMapping Opcode where
         0b0010011 -> OP_IMM
         0b0110011 -> OP
         0b1110011 -> SYSTEM
-        _ -> error ("Unknown opcode " L.++ (show code))
+        _ -> UNKNOWN_CODE --error ("Unknown opcode " L.++ (show code))
 
 
 type Funct7         = Unsigned 7
@@ -61,6 +62,7 @@ data InstructionForm
     | BTypeForm Imm12 Imm10'5 RegisterID RegisterID Funct3 Imm4'1 Imm11 Opcode
     | UTypeForm Imm31'12 RegisterID Opcode
     | JTypeForm Imm20 Imm10'1 Imm11 Imm19'12 RegisterID Opcode
+    | UnknownForm
     deriving (Show, Eq)
 
 extractOpCode :: Unsigned 32 -> Opcode
@@ -147,4 +149,5 @@ fetch instruction = formed
             OP_IMM      -> fetchIType instruction
             OP          -> fetchRType instruction
             SYSTEM      -> fetchIType instruction
+            UNKNOWN_CODE-> UnknownForm
             -- 0b0001111 -> -- TODO: FENCE, Zifencei

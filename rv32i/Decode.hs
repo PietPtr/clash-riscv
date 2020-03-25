@@ -98,3 +98,4 @@ decode (JTypeForm imm20 imm10'1 imm11 imm19'12 rd opcode) = UType instruction im
         immediate = constructImmediate (JTypeForm imm20 imm10'1 imm11 imm19'12 rd opcode)
         instruction = case opcode of
             JAL_CODE -> JAL
+decode UnknownForm = UnknownType

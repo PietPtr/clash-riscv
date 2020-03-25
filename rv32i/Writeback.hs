@@ -35,6 +35,7 @@ updatepc pc (UType op _ _) execResult = case op of
     LUI   -> pc + 4
     AUIPC -> pc + 4
     JAL   -> conv execResult
+updatepc pc UnknownType _ = pc + 4
 
 branchOrIncrement :: PC -> RegisterValue -> PC
 branchOrIncrement pc value = (if (value == 0) then (pc + 4) else (pc + conv value))
@@ -50,6 +51,7 @@ updateRegisters bank instruction execResult memValue pc = case instruction of
     (IType op _ _ rd) -> writeRegister bank rd (iValue op)
     (SType _ _ _ _)   -> bank
     (UType op _ rd)   -> writeRegister bank rd (uValue op)
+    (UnknownType)     -> bank
     where
         iValue op = case op of
             JALR  -> conv (pc + 4)

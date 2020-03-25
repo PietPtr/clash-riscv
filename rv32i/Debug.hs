@@ -52,3 +52,12 @@ showProcess (input, form, instr, executed, (mem, memRes), state) =
     "new memory: " L.++ (show mem) L.++ "\n" L.++
     "mem result: " L.++ (show memRes) L.++ "\n" L.++
     "new state: " L.++ (show state) L.++ "\n"
+
+showProcess' :: (Unsigned 32, InstructionForm, Instruction, ExecutionResult, SystemState, Output) -> String
+showProcess' (input, fetched, decoded, executed, state, output) =
+    "input: " L.++ (showBin input) L.++ "\n" L.++
+    "fetched: " L.++ (show fetched) L.++ "\n" L.++
+    "decoded: " L.++ (show decoded) L.++ "\n" L.++
+    "executed: " L.++ (show executed) L.++ "\n" L.++
+    "new state: " L.++ (show state) L.++ "\n" L.++
+    "output: " L.++ (show output) L.++ "\n"

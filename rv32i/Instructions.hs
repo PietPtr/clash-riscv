@@ -20,7 +20,7 @@ data RInstruction
     | SRA
     | OR
     | AND
-    deriving (Show)
+    deriving (Show, Eq)
 
 data IInstruction
     = JALR
@@ -38,7 +38,7 @@ data IInstruction
     | SLLI
     | SRLI
     | SRAI
-    deriving (Show)
+    deriving (Show, Eq)
 
 data SInstruction
     = BEQ
@@ -50,17 +50,18 @@ data SInstruction
     | SB
     | SH
     | SW
-    deriving (Show)
+    deriving (Show, Eq)
 
 data UInstruction
     = LUI
     | AUIPC
     | JAL
-    deriving (Show)
+    deriving (Show, Eq)
 
 data Instruction
     = RType RInstruction Source Source Destination
     | IType IInstruction Immediate Source Destination
     | SType SInstruction Immediate Source Source
     | UType UInstruction Immediate Destination
-    deriving (Show)
+    | UnknownType
+    deriving (Show, Eq)

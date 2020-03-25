@@ -112,3 +112,5 @@ buildCode (UType op imm rd) registers pc =
             LUI   -> loadUpperImmediate
             AUIPC -> \o2 o1 -> loadUpperImmediate o2 o1 + (conv pc)
             JAL   -> \_ _ -> (conv pc) + imm
+
+buildCode UnknownType _ _ = nop
