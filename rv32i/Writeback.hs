@@ -17,10 +17,10 @@ writeback state instruction execResult memValue = state'
 
 -- TODO: Consider making the cases explicit instead of a catch-all
 updatepc :: PC -> Instruction -> RegisterValue -> PC
-updatepc pc (RType _ _ _ _) _ = pc + 4
+updatepc pc (RType _ _ _ _) _ = pc + 1
 updatepc pc (IType op _ _ _) execResult = case op of
     JALR  -> conv execResult
-    _     -> pc + 4
+    _     -> pc + 1
 updatepc pc (SType op _ _ _) execResult = case op of
     BEQ   -> branchOrIncrement pc execResult
     BNE   -> branchOrIncrement pc execResult
@@ -28,17 +28,19 @@ updatepc pc (SType op _ _ _) execResult = case op of
     BGE   -> branchOrIncrement pc execResult
     BLTU  -> branchOrIncrement pc execResult
     BGEU  -> branchOrIncrement pc execResult
-    SB    -> pc + 4
-    SH    -> pc + 4
-    SW    -> pc + 4
+    SB    -> pc + 1
+    SH    -> pc + 1
+    SW    -> pc + 1
 updatepc pc (UType op _ _) execResult = case op of
-    LUI   -> pc + 4
-    AUIPC -> pc + 4
-    JAL   -> conv execResult
-updatepc pc UnknownType _ = pc + 4
+    LUI   -> pc + 1
+    AUIPC -> pc + 1
+    JAL   -> conv (execResult `shiftR` 2)
+updatepc pc UnknownType _ = pc + 1
 
 branchOrIncrement :: PC -> RegisterValue -> PC
-branchOrIncrement pc value = (if (value == 0) then (pc + 4) else (pc + conv value))
+branchOrIncrement pc value = (if (value == 0) then (pc + 1) else (pc + conv shiftedValue))
+    where
+        shiftedValue = value `shiftR` 2
 
 writeRegister :: RegisterBank -> RegisterID -> RegisterValue -> RegisterBank
 writeRegister bank 0 _ = bank
@@ -54,7 +56,7 @@ updateRegisters bank instruction execResult memValue pc = case instruction of
     (UnknownType)     -> bank
     where
         iValue op = case op of
-            JALR  -> conv (pc + 4)
+            JALR  -> conv (pc + 1)
             LB    -> memValue
             LH    -> memValue
             LW    -> memValue
@@ -64,4 +66,4 @@ updateRegisters bank instruction execResult memValue pc = case instruction of
         uValue op = case op of
             LUI   -> execResult
             AUIPC -> execResult
-            JAL   -> conv (pc + 4)
+            JAL   -> conv (pc + 1)

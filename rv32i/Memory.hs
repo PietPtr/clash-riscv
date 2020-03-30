@@ -7,11 +7,11 @@ import Instructions
 import Execute
 import qualified Data.List as L
 
-readMem :: Address -> Memory -> RegisterValue
+readMem :: AlignedAddress -> Memory -> RegisterValue
 readMem addr mem = mem !! addr
 
-writeMem :: Address -> RegisterValue -> Memory -> Memory
-writeMem addr value mem = replace addr value mem
+writeMem :: AlignedAddress -> RegisterValue -> Memory -> Memory
+writeMem addr value mem = trace (show (addr, value)) (replace addr value mem)
 
 {--
 TODO: In the current implementation only words aligned to 4 bytes can be retrieved
@@ -36,11 +36,11 @@ memoryAccess instruction ExecutionResult{result=address, op2=op2} mem =
             _ -> (mem, 0)
         _ -> (mem, 0)
     where
-         byte       :: Signed 8      = truncateB $ readMem (conv (address `shiftR` 2)) mem
-         halfword   :: Signed 16     = truncateB $ readMem (conv (address `shiftR` 2)) mem
-         word       :: RegisterValue = readMem (conv (address `shiftR` 2)) mem
+         byte       :: Signed 8       = truncateB $ readMem (conv (address `shiftR` 2)) mem
+         halfword   :: Signed 16      = truncateB $ readMem (conv (address `shiftR` 2)) mem
+         word       :: RegisterValue  = readMem (conv (address `shiftR` 2)) mem
 
-         address' = conv (address `shiftR` 2)
+         address'   :: AlignedAddress = conv (address `shiftR` 2)
 
 
 {--

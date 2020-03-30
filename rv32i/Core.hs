@@ -27,7 +27,7 @@ data SystemState = SystemState
 
 
 initialState = SystemState
-    { pc        = 84
+    { pc        = 21
     , registers = testregs
     , memory    = testmem
     }
@@ -43,12 +43,12 @@ core SystemState{..} _ = trace (showProcess (instruction, fetched, decoded, exec
         executed = execute decoded registers pc
         decoded = decode fetched
         fetched = fetch instruction
-        instruction :: Unsigned 32 = conv $ memory !! (pc `shiftR` 2)
+        instruction :: Unsigned 32 = conv $ memory !! pc
 
         internalRegs = InternalRegs {pc = pc, registers = registers}
 
 output :: SystemState -> PC
-output SystemState{..} = pc `shiftR` 2
+output SystemState{..} = pc
 
 mooreCore = moore @System core output initialState
 
