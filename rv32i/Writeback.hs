@@ -43,8 +43,9 @@ branchOrIncrement pc value = (if (value == 0) then (pc + 1) else (pc + conv shif
         shiftedValue = value `shiftR` 2
 
 writeRegister :: RegisterBank -> RegisterID -> RegisterValue -> RegisterBank
-writeRegister bank 0 _ = bank
-writeRegister bank rd value = replace rd value bank
+writeRegister bank rd value = case rd of
+    0 -> bank
+    _ -> replace rd value bank
 
 -- TODO: group these symbols in a record?
 updateRegisters :: RegisterBank -> Instruction -> RegisterValue -> RegisterValue -> PC -> RegisterBank

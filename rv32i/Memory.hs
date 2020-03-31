@@ -11,7 +11,7 @@ readMem :: AlignedAddress -> Memory -> RegisterValue
 readMem addr mem = mem !! addr
 
 writeMem :: AlignedAddress -> RegisterValue -> Memory -> Memory
-writeMem addr value mem = trace (show (addr, value)) (replace addr value mem)
+writeMem addr value mem = replace addr value mem
 
 {--
 TODO: In the current implementation only words aligned to 4 bytes can be retrieved
