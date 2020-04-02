@@ -7,13 +7,6 @@ import BaseTypes
 import Instructions
 import ALUFunctions
 
-data InternalRegs = InternalRegs
-    { pc        :: PC
-    , registers :: RegisterBank
-    } deriving (Show, Eq, NFDataX, Generic)
-
-nullstate :: InternalRegs
-nullstate = InternalRegs {pc=0, registers=emptyregs}
 
 data ControlCode = ControlCode
     { operand2 :: RegisterValue
@@ -33,8 +26,8 @@ data ExecutionResult = ExecutionResult
     , op2    :: RegisterValue -- TODO: How can I give this a better name? (operand2 is already taken)
     } deriving (Show)
 
-execute :: Instruction -> RegisterBank -> PC -> ExecutionResult
-execute instruction registers pc = ExecutionResult{result = result, op2 = operand2 }
+execute :: RegisterBank -> PC -> Instruction -> ExecutionResult
+execute registers pc instruction = ExecutionResult{result = result, op2 = operand2 }
     where
         ControlCode{..} = buildCode instruction registers pc
         result = fbinary operand2 operand1

@@ -36,7 +36,7 @@ instance BitMapping Opcode where
         0b0010011 -> OPCODE_OP_IMM
         0b0110011 -> OPCODE_OP
         0b1110011 -> OPCODE_SYSTEM
-        _ -> OPCODE_UNKNOWN
+        _         -> OPCODE_UNKNOWN
 
 
 type Funct7         = Unsigned 7
