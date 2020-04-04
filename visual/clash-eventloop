@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# clash source is a symlink to the clash binary produced by compiling from source
+clash-src -package-db ~/.cabal/store/ghc-8.4.4/package.db -i../rv32i --interactive "$@"
