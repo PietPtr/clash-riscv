@@ -33,19 +33,22 @@ initialState = SystemState
     }
 
 core :: SystemState -> Tick -> SystemState
+<<<<<<< HEAD
 core SystemState{..} _ = --trace (showProcess (instruction, fetched, decoded, executed, (memory', memValue), InternalRegs{pc=pc', registers=registers'}))
+=======
+core SystemState{..} _ = trace (showProcess (instruction, fetched, decoded, executed, (memory', memValue), (pc', registers')))
+>>>>>>> 11b9b92ec63b990bd7131a2c3e3e2d56d7056eff
     state'
     where
         state' = SystemState {pc = pc', registers = registers', memory = memory'}
 
-        InternalRegs{pc=pc', registers=registers'} = writeback internalRegs decoded (result executed) memValue
-        (memory', memValue) = memoryAccess decoded executed memory
-        executed = execute decoded registers pc
-        decoded = decode fetched
-        fetched = fetch instruction
-        instruction :: Unsigned 32 = conv $ memory !! pc
+        (registers', pc')   = writeback registers pc decoded (result executed) memValue
+        (memory', memValue) = memoryAccess memory decoded executed
+        executed            = execute registers pc decoded
+        decoded             = decode fetched
+        fetched             = fetch instruction
+        instruction         = conv $ memory !! pc
 
-        internalRegs = InternalRegs {pc = pc, registers = registers}
 
 output :: SystemState -> PC
 output SystemState{..} = pc
@@ -59,6 +62,7 @@ topEntity
     -> Signal System Tick
     -> Signal System PC
 topEntity = exposeClockResetEnable mooreCore
+
 
 sim n = mapM_ print $ L.take n $ simulate @System mooreCore (cycle [0])
 
