@@ -33,11 +33,7 @@ initialState = SystemState
     }
 
 core :: SystemState -> Tick -> SystemState
-<<<<<<< HEAD
-core SystemState{..} _ = --trace (showProcess (instruction, fetched, decoded, executed, (memory', memValue), InternalRegs{pc=pc', registers=registers'}))
-=======
 core SystemState{..} _ = trace (showProcess (instruction, fetched, decoded, executed, (memory', memValue), (pc', registers')))
->>>>>>> 11b9b92ec63b990bd7131a2c3e3e2d56d7056eff
     state'
     where
         state' = SystemState {pc = pc', registers = registers', memory = memory'}
