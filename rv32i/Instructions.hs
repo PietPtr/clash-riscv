@@ -65,3 +65,12 @@ data Instruction
     | UType UInstruction Immediate Destination
     | UnknownType
     deriving (Show, Eq)
+
+
+pretty :: Instruction -> String
+pretty (SType instr imm rs2 rs1) = case instr of
+    SW -> "SW at src(" L.++ rs2' L.++ ") in base(" L.++ rs1' L.++ ") + imm(" L.++ imm' L.++ ")"
+    where
+        rs2' = show rs2
+        rs1' = show rs1
+        imm' = show imm
