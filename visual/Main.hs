@@ -36,6 +36,25 @@ red     = (255,   0,   0, 255)
 
 canvasSize = (1240, 1024)
 
+txth = 20
+intsrInfoPosP   = Point (10, 10)
+instrInfoDim    = Point (1240, 150)
+memoryPosP      = Point (10, y instrInfoDim + 10)
+memoryDim       = Point (690, (32 + 1) * txth)
+pcPosP          = memoryPosP |+| Point (x memoryDim, y memoryDim + txth)
+-- without the +0.1 the memory isn't displayed correctly...
+regPosP         = memoryPosP |+| Point (x memoryDim, txth + 0.1)
+highlightBaseP  = memoryPosP |+| Point (24, 15)
+controlsPosP    = memoryPosP |+| Point (0, y memoryDim + txth * 1)
+
+memoryPos       = extr memoryPosP
+pcPos           = extr pcPosP
+regPos          = extr regPosP
+controlsPos     = extr controlsPosP
+
+extr :: Point -> (X, Y)
+extr (Point (x, y)) = (x, y)
+
 drawSF name shape = [ Draw $ Stateful name 0 shape ]
 
 txtShape (x,y) str = Text str "Courier" 14 (Point (x,y)) AlignLeft black 1 black Nothing
@@ -43,6 +62,9 @@ txtShapeR (x,y) str = (txtShape (x, y) str) { alignment = AlignRight }
 
 
 defaultCanvasSetup = C.SetupCanvas canvasId 1 canvasSize (C.CSSPosition C.CSSFromCenter (C.CSSPercentage 50, C.CSSPercentage 50))
+
+onCanvas :: [StatefulGraphicsOut] -> [Out]
+onCanvas graphics = map (\a -> OutStatefulGraphics 1 [a]) graphics
 
 
 clearScreen = OutStatefulGraphics 1 (drawSF "clear" shape)
@@ -80,54 +102,118 @@ eventloop state event = case event of
     Start -> (state,
         [ OutCanvas  defaultCanvasSetup
         -- , clearScreen -- causes flickering :( also maybe unnecessary?
-        , OutTimer (SetIntervalTimer "autorun" 1600)
-        ])
+        , OutTimer (SetIntervalTimer "autorun" 80000)
+        ] ++ renderCore (coreState state))
 
-    InTimer (Tick "autorun") -> (state',
-        renderCore (coreState'))
+    InTimer (Tick "autorun") -> (state', out)
         where
             state' = state { coreState = coreState' }
-            coreState' = core (coreState state) 0
 
-    -- TODO: respect autorun bool
-    -- TODO: update autorun bool
-    -- TODO: add key events for next previous
-    -- TODO: render program counter
+            (coreState', out) = if autorunEnabled state
+                then advanceAndRender (coreState state)
+                else (coreState state, [])
+
+    InKeyboard (K.Key "enter") -> (state', [])
+        where state' = state { autorunEnabled = not (autorunEnabled state) }
+
+    InKeyboard (K.Key "right") -> (state', out)
+        where
+            state' = state { coreState = coreState' }
+
+            (coreState', out) = if autorunEnabled state
+                then (coreState state, [])
+                else advanceAndRender (coreState state)
+
+    InKeyboard (K.Key "backspace") -> (state { coreState = initialState }, renderCore initialState)
+
+    -- TODO: show autorun status
+    -- TODO: render program counter correctly
     -- TODO: prehaps restructure such that a memory element is a single object and update only it?
 
     _ -> (state, [])
 
-onCanvas :: [StatefulGraphicsOut] -> [Out]
-onCanvas graphics = map (\a -> OutStatefulGraphics 1 [a]) graphics
-
+advanceAndRender :: SystemState -> (SystemState, [Out])
+advanceAndRender state = (state', renderCore state)
+    where
+        state' = core state 0
 
 renderCore :: SystemState -> [Out]
-renderCore state = renderedMemory ++ renderedRegisters ++ renderedPC
+renderCore state =
+        renderedMemory ++
+        renderedRegisters ++
+        renderedPC ++
+        renderControls
     where
         renderedMemory    = renderMemory $ memory $ state
         renderedRegisters = renderRegisters $ registers $ state
         renderedPC        = renderPC $ pc $ state
 
-renderRegisters :: RegisterBank -> [Out]
-renderRegisters regs = onCanvas $ renderLines (700, 31) $ formatRegisters $ regs
 
 renderPC :: PC -> [Out] -- TODO: maak alsjeblieft van deze magic numbers constanten...
 renderPC pc = numeric ++ highlighter
     where
         numeric         = onCanvas $ drawSF "pc" --klopt echt totaal niet lol
-            $ txtShape (700, 691) ("      PC" +-+ showHex (conv (pc * 4)) 8)
+            $ txtShape pcPos ("      pc" +-+ showHex (conv (pc * 4)) 8)
         highlighter     = onCanvas $ drawSF "pc-highlight" shape
         shape           = Rectangle pos (70, 18) nothing 1 red Nothing
-        pos             = Point (34 + 75.7 * xmod, 25 + 20 * ymod)
+        pos             = highlightBaseP |+| Point (75.7 * xmod, 20 * ymod)
         xmod :: Float   = conv (pc `mod` 8)
         ymod :: Float   = (fromIntegral . floor) $ (fromIntegral pc) / 8
+
+
+renderRegisters :: RegisterBank -> [Out]
+renderRegisters regs = onCanvas $ renderLines regPos $ formatRegisters $ regs
 
 formatRegisters :: RegisterBank -> [String]
 formatRegisters regs = formatted
     where
-        formatted = mapi (\r i -> (regnames i) +-+ "x" ++ (show i) +-+ (showHex r 8) ) listRegs'
+        formatted = mapi (\r i -> printf "%s x%-2d %08x" (regnames i) i r) listRegs'
         listRegs' :: [Integer] = map conv listRegs
         listRegs :: [Unsigned 32] = map conv (toList regs)
+
+
+renderMemory :: Memory -> [Out]
+renderMemory memory = onCanvas $ renderLines memoryPos $ formatMemory $ memory
+
+formatMemoryList :: [Integer] -> [String]
+formatMemoryList mem = header : (mapi (\chunk i -> formatLine chunk i) chunks)
+    where
+        header = "         " ++ (intercalate "       " (map (\a -> showHex a 2) [0,4..0x1c]))
+        chunks = chunksOf 8 mem
+        formatLine words index =
+            (take 2 (showHex (index * 32) 3)) +-+
+            (intercalate " " $ map (\a -> printf "%08x" (a)) words)
+
+formatMemory :: Memory -> [String]
+formatMemory mem = formatMemoryList listInts
+    where
+        listInts     :: [Integer]     = map (conv) listUnsigned
+        listUnsigned :: [Unsigned 32] = map (conv) (toList mem)
+
+
+renderControls :: [Out]
+renderControls = onCanvas $ renderLines controlsPos lines
+    where
+        lines = map (\(k, e) -> printf "%12s: %s" k e) keyExplanation
+        keyExplanation =
+            [ ("Backspace", "Reset the simulation")
+            , ("Enter",     "Toggle automatic running")
+            , ("Right",     "Advance one step") ]
+
+showHex :: Integer -> Integer -> String
+showHex n d = printf ("%0" ++ (show d) ++ "x") n
+
+renderLines :: (X, Y) -> [String] -> [StatefulGraphicsOut]
+renderLines _ [] = []
+renderLines (x, y) (line:lines) = (drawSF ("name" ++ (show y)) shape) ++ renderLines (x, y + 20) lines
+    where shape = txtShape (x, y) line
+
+
+mapi :: (a -> Integer -> b) -> [a] -> [b]
+mapi f as = map (\(a, i) -> f a i) combined
+    where combined = zip as [0..]
+
+a +-+ b = a ++ " " ++ b
 
 regnames :: Integer -> String
 regnames reg = case reg of
@@ -163,37 +249,3 @@ regnames reg = case reg of
     29 -> "t4  "
     30 -> "t5  "
     31 -> "t6  "
-
-renderMemory :: Memory -> [Out]
-renderMemory memory = onCanvas $ renderLines (10, 10) $ formatMemory $ memory
-
-formatMemoryList :: [Integer] -> [String]
-formatMemoryList mem = header : (mapi (\chunk i -> formatLine chunk i) chunks)
-    where
-        header = "         " ++ (intercalate "       " (map (\a -> showHex a 2) [0,4..0x1c]))
-        chunks = chunksOf 8 mem
-        formatLine words index =
-            (take 2 (showHex (index * 32) 3)) +-+
-            (intercalate " " $ map (\a -> printf "%08x" (a)) words)
-
-formatMemory :: Memory -> [String]
-formatMemory mem = formatMemoryList listInts
-    where
-        listInts     :: [Integer]     = map (conv) listUnsigned
-        listUnsigned :: [Unsigned 32] = map (conv) (toList mem)
-
-
-showHex :: Integer -> Integer -> String
-showHex n d = printf ("%0" ++ (show d) ++ "x") n
-
-renderLines :: (X, Y) -> [String] -> [StatefulGraphicsOut]
-renderLines _ [] = []
-renderLines (x, y) (line:lines) = (drawSF ("name" ++ (show y)) shape) ++ renderLines (x, y + 20) lines
-    where shape = txtShape (x, y) line
-
-
-mapi :: (a -> Integer -> b) -> [a] -> [b]
-mapi f as = map (\(a, i) -> f a i) combined
-    where combined = zip as [0..]
-
-a +-+ b = a ++ " " ++ b
