@@ -11,6 +11,7 @@ import Execute
 import Numeric (showHex, showIntAtBase)
 import Data.Char (intToDigit)
 
+import Text.Printf
 
 
 showBin x = showIntAtBase 2 intToDigit x ""
@@ -52,3 +53,101 @@ showProcess (input, form, instr, executed, (mem, memRes), (pc, regs)) =
     "new memory: " L.++ (show mem) L.++ "\n" L.++
     "mem result: " L.++ (show memRes) L.++ "\n" L.++
     "new state: pc=" L.++ (show pc) L.++ ", regs=" L.++ (show regs) L.++ "\n"
+
+
+pretty :: Instruction -> String
+pretty (RType instr rs2 rs1 rd) = (show instr) L.++ ": " L.++ case instr of
+    ADD  -> printf "store %s + %s into %s" rs2' rs1' rd'
+    SUB  -> printf "store %s - %s into %s" rs2' rs1' rd'
+    SLL  -> printf "store %s << (%s & 0b11111) into %s" rs2' rs1' rd'
+    SLT  -> printf "if %s < %s then set %s to 1 else 0" rs2' rs1' rd'
+    SLTU -> printf "if %s < %s (unsigned) then set %s to 1 else 0" rs2' rs1' rd'
+    XOR  -> printf "store %s XOR %s into %s" rs2' rs1' rd'
+    SRL  -> printf "store %s >> (%s & 0b11111) into %s" rs2' rs1' rd'
+    SRA  -> printf "store %s >> (%s & 0b11111) (arithmetic) into %s" rs2' rs1' rd'
+    OR   -> printf "store %s OR %s into %s" rs2' rs1' rd'
+    AND  -> printf "store %s AND %s into %s" rs2' rs1' rd'
+    where
+        rs2' = regnumber $ conv rs2
+        rs1' = regnumber $ conv rs1
+        rd'  = regnumber $ conv rd
+pretty (IType instr imm rs1 rd) = (show instr) L.++ ": " L.++ case instr of
+    JALR  -> printf ""
+    LB    -> printf "load byte from %s + imm(%i) into %s" rs1' imm' rd'
+    LH    -> printf "load halfword from %s + imm(%i) into %s" rs1' imm' rd'
+    LW    -> printf "load word from %s + imm(%i) into %s" rs1' imm' rd'
+    LBU   -> printf "load byte (unsigned) from %s + imm(%i) into %s" rs1' imm' rd'
+    LHU   -> printf "load halfworde (unsigned) from %s + imm(%i) into %s" rs1' imm' rd'
+    ADDI  -> printf "store %s + imm(%i) into %s" rs1' imm' rd'
+    SLTI  -> printf "if %s < imm(%i) then set %s to 1 else 0" rs1' imm' rd'
+    SLTIU -> printf "if %s < imm(%i) (unsigned) then set %s to 1 else 0" rs1' imm' rd'
+    XORI  -> printf "store %s XOR imm(%i) into %s" rs1' imm' rd'
+    ORI   -> printf "store %s OR imm(%i) into %s" rs1' imm' rd'
+    ANDI  -> printf "store %s AND imm(%i) into %s" rs1' imm' rd'
+    SLLI  -> printf "store %s << imm(%i) into %s" rs1' imm' rd'
+    SRLI  -> printf "store %s >> imm(%i) into %s" rs1' imm' rd'
+    SRAI  -> printf "store %s << imm(%i) (arithmetic) into %s" rs1' imm' rd'
+    where
+        rs1' = regnumber $ conv rs1
+        rd'  = regnumber $ conv rd
+        imm' :: Int = conv imm
+pretty (SType instr imm rs2 rs1) = (show instr) L.++ ": " L.++ case instr of
+    BEQ  -> printf "if %s == %s then branch to pc + imm(%i)" rs2' rs1' imm'
+    BNE  -> printf "if %s != %s then branch to pc + imm(%i)" rs2' rs1' imm'
+    BLT  -> printf "if %s < %s then branch to pc + imm(%i)" rs2' rs1' imm'
+    BGE  -> printf "if %s >= %s then branch to pc + imm(%i)" rs2' rs1' imm'
+    BLTU -> printf "if %s < %s, unsigned then branch to pc + imm(%i)" rs2' rs1' imm'
+    BGEU -> printf "if %s >= %s, unsigned then branch to pc + imm(%i)" rs2' rs1' imm'
+    SB   -> printf "store byte at src(%s) in base(%s) + imm(%i)" rs2' rs1' imm'
+    SH   -> printf "store halfword at src(%s) in base(%s) + imm(%i)" rs2' rs1' imm'
+    SW   -> printf "store word at src(%s) in base(%s) + imm(%i)" rs2' rs1' imm'
+    where
+        rs2' = regnumber $ conv rs2
+        rs1' = regnumber $ conv rs1
+        imm' :: Int = conv imm
+pretty (UType instr imm dest) = (show instr) L.++ ": " L.++ case instr of
+    LUI   -> printf "add 0x%08x to dest(x%s)" imm' dest'
+    AUIPC -> printf "add 0x%08x to pc, store in %s " imm' dest'
+    JAL   -> printf "jump to pc + 0x%08x, store (pc+4) in %s" imm' dest'
+    where
+        imm' :: Int = conv imm
+        dest' = regnumber $ conv dest
+pretty (UnknownType) = "Unknown instruction"
+
+regnumber :: Integer -> String
+regnumber reg = "x" L.++ show reg
+
+regnames :: Integer -> String
+regnames reg = case reg of
+    0  -> "zero"
+    1  -> "ra"
+    2  -> "sp"
+    3  -> "gp"
+    4  -> "tp"
+    5  -> "t0"
+    6  -> "t1"
+    7  -> "t2"
+    8  -> "fp"
+    9  -> "s1"
+    10 -> "a0"
+    11 -> "a1"
+    12 -> "a2"
+    13 -> "a3"
+    14 -> "a4"
+    15 -> "a5"
+    16 -> "a6"
+    17 -> "a7"
+    18 -> "s2"
+    19 -> "s3"
+    20 -> "s4"
+    21 -> "s5"
+    22 -> "s6"
+    23 -> "s7"
+    24 -> "s8"
+    25 -> "s9"
+    26 -> "s10"
+    27 -> "s11"
+    28 -> "t3"
+    29 -> "t4"
+    30 -> "t5"
+    31 -> "t6"

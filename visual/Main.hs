@@ -1,9 +1,11 @@
 module Main where
 
-import Clash.Prelude hiding (Text, map, (++), length, zip, take)
+import Clash.Prelude hiding (Text, map, (++), length, zip, take, (^))
 import Core hiding (Tick)
 import BaseTypes hiding (trace)
 import Debug
+import Fetch
+import Decode
 
 import Eventloop.Core
 import Eventloop.DefaultConfiguration
@@ -37,8 +39,8 @@ red     = (255,   0,   0, 255)
 canvasSize = (1240, 1024)
 
 txth = 20
-intsrInfoPosP   = Point (10, 10)
-instrInfoDim    = Point (1240, 150)
+instrInfoPosP   = Point (10, 10.5)
+instrInfoDim    = Point (1240, 10 + 2 * txth)
 memoryPosP      = Point (10, y instrInfoDim + 10)
 memoryDim       = Point (690, (32 + 1) * txth)
 pcPosP          = memoryPosP |+| Point (x memoryDim, y memoryDim + txth)
@@ -51,6 +53,7 @@ memoryPos       = extr memoryPosP
 pcPos           = extr pcPosP
 regPos          = extr regPosP
 controlsPos     = extr controlsPosP
+instrInfoPos    = extr instrInfoPosP
 
 extr :: Point -> (X, Y)
 extr (Point (x, y)) = (x, y)
@@ -139,14 +142,16 @@ advanceAndRender state = (state', renderCore state)
 
 renderCore :: SystemState -> [Out]
 renderCore state =
-        renderedMemory ++
-        renderedRegisters ++
-        renderedPC ++
-        renderControls
+           renderedMemory
+        ++ renderedRegisters
+        ++ renderedPC
+        ++ renderControls
+        ++ renderedInstrInfo
     where
         renderedMemory    = renderMemory $ memory $ state
         renderedRegisters = renderRegisters $ registers $ state
         renderedPC        = renderPC $ pc $ state
+        renderedInstrInfo = renderInstrInfo $ conv $ (memory state) Clash.Prelude.!! (pc state)
 
 
 renderPC :: PC -> [Out] -- TODO: maak alsjeblieft van deze magic numbers constanten...
@@ -167,7 +172,9 @@ renderRegisters regs = onCanvas $ renderLines regPos $ formatRegisters $ regs
 formatRegisters :: RegisterBank -> [String]
 formatRegisters regs = formatted
     where
-        formatted = mapi (\r i -> printf "%s x%-2d %08x" (regnames i) i r) listRegs'
+        formatted = mapi (\r i -> printf "%-4s x%-2d %08x %i" (regnames i) i r (toSignedInt r)) listRegs'
+        toSignedInt :: Integer -> Integer
+        toSignedInt r = conv (conv r :: Signed 32)
         listRegs' :: [Integer] = map conv listRegs
         listRegs :: [Unsigned 32] = map conv (toList regs)
 
@@ -200,6 +207,14 @@ renderControls = onCanvas $ renderLines controlsPos lines
             , ("Enter",     "Toggle automatic running")
             , ("Right",     "Advance one step") ]
 
+
+renderInstrInfo :: Unsigned 32 -> [Out]
+renderInstrInfo instr = onCanvas $ renderLines instrInfoPos ["info", infoStr]
+    where
+        infoStr = printf "%60s" (decoded)
+        decoded = (pretty . decode . fetch) instr
+
+
 showHex :: Integer -> Integer -> String
 showHex n d = printf ("%0" ++ (show d) ++ "x") n
 
@@ -214,38 +229,3 @@ mapi f as = map (\(a, i) -> f a i) combined
     where combined = zip as [0..]
 
 a +-+ b = a ++ " " ++ b
-
-regnames :: Integer -> String
-regnames reg = case reg of
-    0  -> "zero"
-    1  -> "ra  "
-    2  -> "sp  "
-    3  -> "gp  "
-    4  -> "tp  "
-    5  -> "t0  "
-    6  -> "t1  "
-    7  -> "t2  "
-    8  -> "fp  "
-    9  -> "s1  "
-    10 -> "a0  "
-    11 -> "a1  "
-    12 -> "a2  "
-    13 -> "a3  "
-    14 -> "a4  "
-    15 -> "a5  "
-    16 -> "a6  "
-    17 -> "a7  "
-    18 -> "s2  "
-    19 -> "s3  "
-    20 -> "s4  "
-    21 -> "s5  "
-    22 -> "s6  "
-    23 -> "s7  "
-    24 -> "s8  "
-    25 -> "s9  "
-    26 -> "s10 "
-    27 -> "s11 "
-    28 -> "t3  "
-    29 -> "t4  "
-    30 -> "t5  "
-    31 -> "t6  "
