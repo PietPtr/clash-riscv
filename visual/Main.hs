@@ -6,6 +6,7 @@ import BaseTypes hiding (trace)
 import Debug
 import Fetch
 import Decode
+import Instructions
 
 import Eventloop.Core
 import Eventloop.DefaultConfiguration
@@ -42,7 +43,7 @@ txth = 20
 instrInfoPosP   = Point (10, 10.5)
 instrInfoDim    = Point (1240, 10 + 2 * txth)
 memoryPosP      = Point (10, y instrInfoDim + 10)
-memoryDim       = Point (690, (32 + 1) * txth)
+memoryDim       = Point (650, (32 + 1) * txth)
 pcPosP          = memoryPosP |+| Point (x memoryDim, y memoryDim + txth)
 -- without the +0.1 the memory isn't displayed correctly...
 regPosP         = memoryPosP |+| Point (x memoryDim, txth + 0.1)
@@ -149,16 +150,18 @@ renderCore state =
         ++ renderedInstrInfo
     where
         renderedMemory    = renderMemory $ memory $ state
-        renderedRegisters = renderRegisters $ registers $ state
+        renderedRegisters = renderRegisters (registers state) (instruction)
         renderedPC        = renderPC $ pc $ state
-        renderedInstrInfo = renderInstrInfo $ conv $ (memory state) Clash.Prelude.!! (pc state)
+        renderedInstrInfo = renderInstrInfo $ conv $ instructionData
+        instruction = (decode . fetch . conv) instructionData
+        instructionData = (memory state) Clash.Prelude.!! (pc state)
 
 
 renderPC :: PC -> [Out] -- TODO: maak alsjeblieft van deze magic numbers constanten...
 renderPC pc = numeric ++ highlighter
     where
         numeric         = onCanvas $ drawSF "pc" --klopt echt totaal niet lol
-            $ txtShape pcPos ("      pc" +-+ showHex (conv (pc * 4)) 8)
+            $ txtShape pcPos ("                 pc" +-+ showHex ((conv pc) * 4) 8)
         highlighter     = onCanvas $ drawSF "pc-highlight" shape
         shape           = Rectangle pos (70, 18) nothing 1 red Nothing
         pos             = highlightBaseP |+| Point (75.7 * xmod, 20 * ymod)
@@ -166,18 +169,41 @@ renderPC pc = numeric ++ highlighter
         ymod :: Float   = (fromIntegral . floor) $ (fromIntegral pc) / 8
 
 
-renderRegisters :: RegisterBank -> [Out]
-renderRegisters regs = onCanvas $ renderLines regPos $ formatRegisters $ regs
+renderRegisters :: RegisterBank -> Instruction -> [Out]
+renderRegisters regs instr = onCanvas $ renderLines regPos $ formatRegisters regs instr
 
-formatRegisters :: RegisterBank -> [String]
-formatRegisters regs = formatted
+formatRegisters :: RegisterBank -> Instruction -> [String]
+formatRegisters regs instr = formatted
     where
-        formatted = mapi (\r i -> printf "%-4s x%-2d %08x %i" (regnames i) i r (toSignedInt r)) listRegs'
+        formatted = mapi (\r i -> printf "%10s %-4s x%-2d %08x %-8i" (use i) (regnames i) i r (toSignedInt r)) listRegs'
         toSignedInt :: Integer -> Integer
         toSignedInt r = conv (conv r :: Signed 32)
         listRegs' :: [Integer] = map conv listRegs
         listRegs :: [Unsigned 32] = map conv (toList regs)
+        rs1Index = rs1Is instr
+        rs2Index = rs2Is instr
+        rdIndex = rdIs instr
+        use index =
+            (if (Just index == rs1Index) then "rs1" else "") ++
+            (if (Just index == rs2Index) then " rs2" else "") ++
+            (if (Just index == rdIndex)  then " rd"   else "")
 
+rs1Is :: Instruction -> Maybe Integer
+rs1Is (RType _ rs1 _ _) = Just (conv rs1)
+rs1Is (IType _ _ rs1 _) = Just (conv rs1)
+rs1Is (SType _ _ rs1 _) = Just (conv rs1)
+rs1Is _ = Nothing
+
+rs2Is :: Instruction -> Maybe Integer
+rs2Is (RType _ _ rs2 _) = Just (conv rs2)
+rs2Is (SType _ _ _ rs2) = Just (conv rs2)
+rs2Is _ = Nothing
+
+rdIs :: Instruction -> Maybe Integer
+rdIs (RType _ _ _ rd) = Just (conv rd)
+rdIs (IType _ _ _ rd) = Just (conv rd)
+rdIs (UType _ _ rd)   = Just (conv rd)
+rdIs _ = Nothing
 
 renderMemory :: Memory -> [Out]
 renderMemory memory = onCanvas $ renderLines memoryPos $ formatMemory $ memory
