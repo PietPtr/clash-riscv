@@ -7,6 +7,7 @@ import Debug
 import Fetch
 import Decode
 import Instructions
+import Execute
 
 import Eventloop.Core
 import Eventloop.DefaultConfiguration
@@ -41,7 +42,7 @@ canvasSize = (1240, 1024)
 
 txth = 20
 instrInfoPosP   = Point (10, 10.5)
-instrInfoDim    = Point (1240, 10 + 2 * txth)
+instrInfoDim    = Point (1240, 10 + 3 * txth)
 memoryPosP      = Point (10, y instrInfoDim + 10)
 memoryDim       = Point (650, (32 + 1) * txth)
 pcPosP          = memoryPosP |+| Point (x memoryDim, y memoryDim + txth)
@@ -152,7 +153,7 @@ renderCore state =
         renderedMemory    = renderMemory $ memory $ state
         renderedRegisters = renderRegisters (registers state) (instruction)
         renderedPC        = renderPC $ pc $ state
-        renderedInstrInfo = renderInstrInfo $ conv $ instructionData
+        renderedInstrInfo = renderInstrInfo (conv instructionData) state
         instruction = (decode . fetch . conv) instructionData
         instructionData = (memory state) Clash.Prelude.!! (pc state)
 
@@ -234,11 +235,18 @@ renderControls = onCanvas $ renderLines controlsPos lines
             , ("Right",     "Advance one step") ]
 
 
-renderInstrInfo :: Unsigned 32 -> [Out]
-renderInstrInfo instr = onCanvas $ renderLines instrInfoPos ["info", infoStr]
+renderInstrInfo :: Unsigned 32 -> SystemState -> [Out]
+renderInstrInfo instr state = onCanvas $ renderLines instrInfoPos ["info", instrInfo, execInfo]
     where
-        infoStr = printf "%60s" (decoded)
-        decoded = (pretty . decode . fetch) instr
+        instrInfo = printf "%60s" (pretty decoded)
+        execInfo  = printf "%60s" execInfoStr
+
+        execInfoStr :: String  = printf "result: %i, operator 2: %i" exresult exop2
+        exresult    :: Integer = conv $ result executed
+        exop2       :: Integer = conv $ op2 executed
+
+        executed  = execute (registers state) (pc state) decoded
+        decoded   = (decode . fetch) instr
 
 
 showHex :: Integer -> Integer -> String
