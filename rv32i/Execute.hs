@@ -103,7 +103,8 @@ buildCode (UType op imm rd) registers pc =
     where
         arithmeticFunction = case op of
             LUI   -> loadUpperImmediate
-            AUIPC -> \o2 o1 -> loadUpperImmediate o2 o1 + (conv pc)
-            JAL   -> \_ _ -> (conv pc) + imm
+            AUIPC -> \o2 o1 -> loadUpperImmediate o2 o1 + pc'
+            JAL   -> \_  _  -> pc' + imm
+        pc' = ((conv pc) `shiftL` 2)
 
 buildCode UnknownType _ _ = nop
