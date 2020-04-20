@@ -46,6 +46,7 @@ instrInfoDim    = Point (1240, 10 + 3 * txth)
 memoryPosP      = Point (10, y instrInfoDim + 10)
 memoryDim       = Point (650, (32 + 1) * txth)
 pcPosP          = memoryPosP |+| Point (x memoryDim, y memoryDim + txth)
+immPosP         = pcPosP |+| Point (0, txth)
 -- without the +0.1 the memory isn't displayed correctly...
 regPosP         = memoryPosP |+| Point (x memoryDim, txth + 0.1)
 highlightBaseP  = memoryPosP |+| Point (24, 15)
@@ -53,9 +54,11 @@ controlsPosP    = memoryPosP |+| Point (0, y memoryDim + txth * 1)
 
 memoryPos       = extr memoryPosP
 pcPos           = extr pcPosP
+immPos          = extr immPosP
 regPos          = extr regPosP
 controlsPos     = extr controlsPosP
 instrInfoPos    = extr instrInfoPosP
+
 
 extr :: Point -> (X, Y)
 extr (Point (x, y)) = (x, y)
@@ -107,7 +110,7 @@ eventloop state event = case event of
     Start -> (state,
         [ OutCanvas  defaultCanvasSetup
         -- , clearScreen -- causes flickering :( also maybe unnecessary?
-        , OutTimer (SetIntervalTimer "autorun" 80000)
+        , OutTimer (SetIntervalTimer "autorun" 90000)
         ] ++ renderCore (coreState state))
 
     InTimer (Tick "autorun") -> (state', out)
@@ -147,15 +150,17 @@ renderCore state =
            renderedMemory
         ++ renderedRegisters
         ++ renderedPC
+        ++ renderedImm
         ++ renderControls
         ++ renderedInstrInfo
     where
         renderedMemory    = renderMemory $ memory $ state
         renderedRegisters = renderRegisters (registers state) (instruction)
         renderedPC        = renderPC $ pc $ state
+        renderedImm       = renderImm $ instruction
         renderedInstrInfo = renderInstrInfo (conv instructionData) state
-        instruction = (decode . fetch . conv) instructionData
-        instructionData = (memory state) Clash.Prelude.!! (pc state)
+        instruction       = (decode . fetch . conv) instructionData
+        instructionData   = (memory state) Clash.Prelude.!! (pc state)
 
 
 renderPC :: PC -> [Out] -- TODO: maak alsjeblieft van deze magic numbers constanten...
@@ -169,6 +174,18 @@ renderPC pc = numeric ++ highlighter
         xmod :: Float   = conv (pc `mod` 8)
         ymod :: Float   = (fromIntegral . floor) $ (fromIntegral pc) / 8
 
+renderImm :: Instruction -> [Out]
+renderImm instruction = onCanvas $ drawSF "imm" shape
+    where
+        shape = txtShape immPos text
+        text  = case imm of
+            Nothing -> "                                 "
+            Just imm -> printf "                imm %-8i" (imm)
+        imm  :: Maybe Int = case instruction of
+            (IType _ imm _ _) -> Just (conv imm)
+            (SType _ imm _ _) -> Just (conv imm)
+            (UType _ imm _) -> Just (conv imm)
+            _ -> Nothing
 
 renderRegisters :: RegisterBank -> Instruction -> [Out]
 renderRegisters regs instr = onCanvas $ renderLines regPos $ formatRegisters regs instr
