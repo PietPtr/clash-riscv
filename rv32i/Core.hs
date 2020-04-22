@@ -17,6 +17,8 @@ import Writeback
 
 import Debug
 
+import Text.Printf
+
 type Tick = Unsigned 0
 
 -- data SystemState = SystemState
@@ -47,10 +49,10 @@ type Tick = Unsigned 0
 --
 --         internalRegs = InternalRegs {pc = pc, registers = registers}
 
-
+initialPC = 21
 
 initialState = SystemState
-    { pc        = 84
+    { pc        = initialPC
     , registers = testregs
     , phase     = Executing
     }
@@ -72,7 +74,8 @@ execution state oldpc instruction = ((state', pc) , (oldpc, Nothing))
     where
         SystemState{..} = state
 
-        state' = trace (show (decoded, oldpc, pc, pc')) SystemState{pc=pc', registers=registers', phase=phase'}
+        state' = trace (printf "%08x (%s) %i %i %i" (conv (conv instruction :: Unsigned 32) :: Int) (show decoded) (conv oldpc :: Int) (conv pc :: Int) (conv pc' :: Int))
+                SystemState{pc=pc', registers=registers', phase=phase'}
         output = (readAddress, writedata)
 
         readAddress = case address of
@@ -87,7 +90,7 @@ execution state oldpc instruction = ((state', pc) , (oldpc, Nothing))
         (SystemState{phase=phase'}, (address, writedata)) = blockramAccess state decoded executed
         executed = execute decoded registers oldpc
         decoded = decode fetched
-        fetched = fetch $ conv (trace (show instruction) instruction)
+        fetched = fetch $ conv instruction
 
         -- trace (showProcess' (conv instruction, fetched, decoded, executed, SystemState{pc=pc', registers=registers', phase=phase'}, output))
 
@@ -104,7 +107,7 @@ output SystemState{..} = pc `shiftR` 2
 system tick = bundle (readAddress, dataOut)
     where
         memOut = blockRam testmem readAddress dataOut
-        (readAddress, dataOut) = mealyB core (initialState, 0) memOut
+        (readAddress, dataOut) = mealyB core (initialState, initialPC) memOut
 
 -- mooreCore = moore @System core output initialState
 --
