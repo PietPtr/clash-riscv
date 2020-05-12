@@ -37,23 +37,24 @@ instance BitMapping Opcode where
         0b0110011 -> OPCODE_OP
         0b1110011 -> OPCODE_SYSTEM
         _         -> OPCODE_UNKNOWN
+    fromVector code = fromBits (fromIntegral code :: Unsigned 7)
 
 
 type Funct7         = Unsigned 7
 type Funct3         = Unsigned 3
 
 -- Needs improvement or is this a deliberate design choice?
-type Imm11'0        = Unsigned 12
-type Imm11'5        = Unsigned 7
-type Imm4'0         = Unsigned 5
-type Imm12          = Unsigned 1
-type Imm10'5        = Unsigned 6
-type Imm4'1         = Unsigned 4
-type Imm11          = Unsigned 1
-type Imm31'12       = Unsigned 20
-type Imm20          = Unsigned 1
-type Imm10'1        = Unsigned 10
-type Imm19'12       = Unsigned 8
+type Imm11'0        = BitVector 12
+type Imm11'5        = BitVector 7
+type Imm4'0         = BitVector 5
+type Imm12          = BitVector 1
+type Imm10'5        = BitVector 6
+type Imm4'1         = BitVector 4
+type Imm11          = BitVector 1
+type Imm31'12       = BitVector 20
+type Imm20          = BitVector 1
+type Imm10'1        = BitVector 10
+type Imm19'12       = BitVector 8
 
 data InstructionForm
     = RTypeForm Funct7 RegisterID RegisterID Funct3 RegisterID Opcode
@@ -65,89 +66,98 @@ data InstructionForm
     | UnknownForm
     deriving (Show, Eq)
 
-extractOpCode :: Unsigned 32 -> Opcode
-extractOpCode instruction = fromBits $ instruction .&. 0b1111111
 
-funct3_shift = -12
-funct7_shift = -25
-rd_shift = -7
-rs1_shift = -15
-rs2_shift = -20
-
-fetchUType :: Unsigned 32 -> InstructionForm
+fetchUType :: BitVector 32 -> InstructionForm
 fetchUType instruction = UTypeForm imm31'12 rd opcode
     where
-        imm31'12    = truncateB $ instruction `shift` (-12)
-        rd          = truncateB $ instruction `shift` rd_shift
-        opcode      = extractOpCode instruction
+        imm31'12    = slice d31 d12 instruction
+        rd          = fetchrd       instruction
+        opcode      = fetchOpcode   instruction
 
-fetchJType :: Unsigned 32 -> InstructionForm
+fetchJType :: BitVector 32 -> InstructionForm
 fetchJType instruction = JTypeForm imm20 imm10'1 imm11 imm19'12 rd opcode
     where
-        imm20       = truncateB $ instruction `shift` (-31)
-        imm10'1     = truncateB $ instruction `shift` (-21)
-        imm11       = truncateB $ instruction `shift` (-20)
-        imm19'12    = truncateB $ instruction `shift` (-12)
-        rd          = truncateB $ instruction `shift` rd_shift
-        opcode      = extractOpCode instruction
+        imm20       = slice d31 d31 instruction
+        imm10'1     = slice d30 d21 instruction
+        imm11       = slice d20 d20 instruction
+        imm19'12    = slice d19 d12 instruction
+        rd          = fetchrd       instruction
+        opcode      = fetchOpcode   instruction
 
-fetchIType :: Unsigned 32 -> InstructionForm
+fetchIType :: BitVector 32 -> InstructionForm
 fetchIType instruction = ITypeForm imm11'0 rs1 funct3 rd opcode
     where
-        imm11'0     = truncateB $ instruction `shift` (-20)
-        rs1         = truncateB $ instruction `shift` rs1_shift
-        funct3      = truncateB $ instruction `shift` funct3_shift
-        rd          = truncateB $ instruction `shift` rd_shift
-        opcode      = extractOpCode instruction
+        imm11'0     = slice d31 d20 instruction
+        rs1         = fetchrs1      instruction
+        funct3      = fetchFunct3   instruction
+        rd          = fetchrd       instruction
+        opcode      = fetchOpcode   instruction
 
-fetchBType :: Unsigned 32 -> InstructionForm
+fetchBType :: BitVector 32 -> InstructionForm
 fetchBType instruction = BTypeForm imm12 imm10'5 rs2 rs1 funct3 imm4'1 imm11 opcode
     where
-        imm12       = truncateB $ instruction `shift` (-31)
-        imm10'5     = truncateB $ instruction `shift` (-25)
-        rs2         = truncateB $ instruction `shift` rs2_shift
-        rs1         = truncateB $ instruction `shift` rs1_shift
-        funct3      = truncateB $ instruction `shift` funct3_shift
-        imm4'1      = truncateB $ instruction `shift` (-8)
-        imm11       = truncateB $ instruction `shift` (-7)
-        opcode      = extractOpCode instruction
+        imm12       = slice d31 d31 instruction
+        imm10'5     = slice d30 d25 instruction
+        rs2         = fetchrs2      instruction
+        rs1         = fetchrs1      instruction
+        funct3      = fetchFunct3   instruction
+        imm4'1      = slice d11 d8  instruction
+        imm11       = slice d7 d7   instruction
+        opcode      = fetchOpcode   instruction
 
-fetchSType :: Unsigned 32 -> InstructionForm
+fetchSType :: BitVector 32 -> InstructionForm
 fetchSType instruction = STypeForm imm11'5 rs2 rs1 funct3 imm4'0 opcode
     where
-        imm11'5     = truncateB $ instruction `shift` (-25)
-        rs2         = truncateB $ instruction `shift` rs2_shift
-        rs1         = truncateB $ instruction `shift` rs1_shift
-        funct3      = truncateB $ instruction `shift` funct3_shift
-        imm4'0      = truncateB $ instruction `shift` (-7)
-        opcode      = extractOpCode instruction
+        imm11'5     = slice d31 d25 instruction
+        rs2         = fetchrs2      instruction
+        rs1         = fetchrs1      instruction
+        funct3      = fetchFunct3   instruction
+        imm4'0      = slice d11 d7  instruction
+        opcode      = fetchOpcode   instruction
 
-fetchRType :: Unsigned 32 -> InstructionForm
+fetchRType :: BitVector 32 -> InstructionForm
 fetchRType instruction = RTypeForm funct7 rs2 rs1 funct3 rd opcode
     where
-        funct7      = truncateB $ instruction `shift` funct7_shift
-        rs2         = truncateB $ instruction `shift` rs2_shift
-        rs1         = truncateB $ instruction `shift` rs1_shift
-        funct3      = truncateB $ instruction `shift` funct3_shift
-        rd          = truncateB $ instruction `shift` rd_shift
-        opcode      = extractOpCode instruction
+        funct7      = fetchFunct7   instruction
+        rs2         = fetchrs2      instruction
+        rs1         = fetchrs1      instruction
+        funct3      = fetchFunct3   instruction
+        rd          = fetchrd       instruction
+        opcode      = fetchOpcode   instruction
 
+fetchrd :: BitVector 32 -> RegisterID
+fetchrd instruction = fromIntegral $ slice d11 d7 instruction
 
+fetchrs2 :: BitVector 32 -> RegisterID
+fetchrs2 instruction = fromIntegral $ slice d24 d20 instruction
+
+fetchrs1 :: BitVector 32 -> RegisterID
+fetchrs1 instruction = fromIntegral $ slice d19 d15 instruction
+
+fetchFunct3 :: BitVector 32 -> Funct3
+fetchFunct3 instruction = fromIntegral $ slice d14 d12 instruction
+
+fetchFunct7 :: BitVector 32 -> Funct7
+fetchFunct7 instruction = fromIntegral $ slice d31 d25 instruction
+
+fetchOpcode :: BitVector 32 -> Opcode
+fetchOpcode instruction = fromVector $ slice d6 d0 instruction
 
 fetch :: Unsigned 32 -> InstructionForm
 fetch instruction = formed
     where
-        opcode = extractOpCode instruction
+        bitvector = fromIntegral instruction
+        opcode = fetchOpcode bitvector
         formed = case opcode of
-            OPCODE_LUI    -> fetchUType instruction
-            OPCODE_AUIPC  -> fetchUType instruction
-            OPCODE_JAL    -> fetchJType instruction
-            OPCODE_JALR   -> fetchIType instruction
-            OPCODE_BRANCH -> fetchBType instruction
-            OPCODE_LOAD   -> fetchIType instruction
-            OPCODE_STORE  -> fetchSType instruction
-            OPCODE_OP_IMM -> fetchIType instruction
-            OPCODE_OP     -> fetchRType instruction
-            OPCODE_SYSTEM -> fetchIType instruction
+            OPCODE_LUI    -> fetchUType bitvector
+            OPCODE_AUIPC  -> fetchUType bitvector
+            OPCODE_JAL    -> fetchJType bitvector
+            OPCODE_JALR   -> fetchIType bitvector
+            OPCODE_BRANCH -> fetchBType bitvector
+            OPCODE_LOAD   -> fetchIType bitvector
+            OPCODE_STORE  -> fetchSType bitvector
+            OPCODE_OP_IMM -> fetchIType bitvector
+            OPCODE_OP     -> fetchRType bitvector
+            OPCODE_SYSTEM -> fetchIType bitvector
             OPCODE_UNKNOWN-> UnknownForm
             -- 0b0001111 -> -- TODO: FENCE, Zifencei

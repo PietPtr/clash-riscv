@@ -29,3 +29,4 @@ emptymem = replicate d256 0
 -- Classes
 class BitMapping a where
     fromBits :: KnownNat n => Unsigned n -> a
+    fromVector :: KnownNat n => BitVector n -> a
