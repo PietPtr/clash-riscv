@@ -1,0 +1,3 @@
+#!/bin/bash
+
+clash.clashi components/* tests/* types/*
