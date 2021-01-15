@@ -1,6 +1,7 @@
 module IF where
 
 import Clash.Prelude
+import Globals
 import qualified RegisterFile as RF
 
 data Opcode
@@ -15,7 +16,7 @@ data Opcode
     | OP
     | SYSTEM
     | UNKNOWN
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFDataX)
 
 type Funct7         = Unsigned 7
 type Funct3         = Unsigned 3
@@ -41,17 +42,49 @@ data Form
     | UType Imm31'12 RF.ID Opcode
     | JType Imm20 Imm10'1 Imm11 Imm19'12 RF.ID Opcode
     | Unknown
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFDataX)
 
 
+type PC = Unsigned 32
 
+type State = (PC)
+type Input = (Maybe PC, Stall)
+type Output = (PC)
 
-system inp = bundle (memRead, formed)
+pcControl :: State -> Input -> (State, Output)
+pcControl (pc) (newPC, doStall) = (state', output)
     where
-        (doStall, memData) = unbundle inp
-        formed = fetch <$> memData
+        -- inputs
 
-        memRead = -- het address waarvandaan we van de memory controller willen lezen
+        -- state
+        pc' = case newPC of
+            Just jumpAddr -> jumpAddr
+            Nothing -> if doStall 
+                then pc
+                else pc + 1
+
+        state' = pc'
+
+        -- output
+
+        output = pc
+
+
+pcControlB = mealy pcControl 0
+
+system :: HiddenClockResetEnable dom =>
+    Signal dom (Bool, Unsigned 32, Maybe PC) -> Signal dom (Form, PC)
+system inp = bundle (outFormed, memRead)
+    where
+        (doStall, memData, newPC) = unbundle inp
+
+        formed = fetch <$> memData
+        
+        outFormed = (\stall f u -> if stall then u else f) 
+            <$> doStall <*> formed <*> (register IF.Unknown $ pure IF.Unknown)
+
+        -- zodra je gaat jumpen gaat alles gigantisch mis :) want je moet pipeline flushen
+        memRead = pcControlB $ bundle (newPC, doStall)
 
 
 

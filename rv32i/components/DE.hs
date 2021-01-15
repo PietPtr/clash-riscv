@@ -24,18 +24,23 @@ constructImmediate instruction = fromIntegral $ case instruction of
         signExtend (imm20 ++# imm19'12 ++# imm11 ++# imm10'1 ++# (0 :: BitVector 1))
 
 
+-- hier kan ooit een regje tussen
+system form = bundle (decoded, readInstr)
+    where
+        (decoded, readInstr) = unbundle $ decode <$> form
+
 
 decode :: IF.Form -> (Instruction, RF.ReadInstr)
-decode instrform = (instruction, rs1, rs2)
+decode instrform = (instruction, readInstr)
     where
-        (instruction, rs1, rs2) = case instrform of
-            IF.RType _   rs2 rs1 _ rd _   -> (RType rinstruction rd,           Two rs1 rs2)
-            IF.IType _       rs1 _ rd _   -> (IType iinstruction immediate rd, One rs1)
-            IF.SType _   rs2 rs1 _ _  _   -> (SType sinstruction immediate,    Two rs1 rs2)
-            IF.BType _ _ rs2 rs1 _ _  _ _ -> (SType sinstruction immediate,    Two rs1 rs2)
-            IF.UType _             rd _   -> (UType uinstruction immediate rd, None)
-            IF.JType _ _ _ _       rd _   -> (UType uinstruction immediate rd, None)
-            IF.Unknown                    -> (UnknownType,                     None)
+        (instruction, readInstr) = case instrform of
+            IF.RType _   rs2 rs1 _ rd _   -> (RType rinstruction rd,           RF.Two rs1 rs2)
+            IF.IType _       rs1 _ rd _   -> (IType iinstruction immediate rd, RF.One rs1)
+            IF.SType _   rs2 rs1 _ _  _   -> (SType sinstruction immediate,    RF.Two rs1 rs2)
+            IF.BType _ _ rs2 rs1 _ _  _ _ -> (SType sinstruction immediate,    RF.Two rs1 rs2)
+            IF.UType _             rd _   -> (UType uinstruction immediate rd, RF.None)
+            IF.JType _ _ _ _       rd _   -> (UType uinstruction immediate rd, RF.None)
+            IF.Unknown                    -> (UnknownType,                     RF.None)
 
         immediate = constructImmediate instrform
 

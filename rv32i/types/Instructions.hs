@@ -18,7 +18,7 @@ data RInstruction
     | SRA
     | OR
     | AND
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFDataX)
 
 data IInstruction
     = JALR
@@ -36,7 +36,7 @@ data IInstruction
     | SLLI
     | SRLI
     | SRAI
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFDataX)
 
 data SInstruction
     = BEQ
@@ -48,13 +48,13 @@ data SInstruction
     | SB
     | SH
     | SW
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFDataX)
 
 data UInstruction
     = LUI
     | AUIPC
     | JAL
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFDataX)
 
 data Instruction
     = RType RInstruction Destination
@@ -62,4 +62,4 @@ data Instruction
     | SType SInstruction Immediate 
     | UType UInstruction Immediate Destination
     | UnknownType
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic, NFDataX)
