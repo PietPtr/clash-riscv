@@ -1,11 +1,11 @@
 module Instructions where
 
 import Clash.Prelude
+import Globals
 import qualified RegisterFile as RF
 
 type Destination    = RF.ID
 type Source         = RF.ID
-type Immediate      = Signed 32
 
 data RInstruction
     = ADD

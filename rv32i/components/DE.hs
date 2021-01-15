@@ -6,6 +6,7 @@ import Clash.Prelude
 import qualified IF
 import qualified RegisterFile as RF
 import Instructions
+import Globals
 
 
 
@@ -24,17 +25,17 @@ constructImmediate instruction = fromIntegral $ case instruction of
 
 
 
-decode :: IF.Form -> (Instruction, RF.ID, RF.ID)
+decode :: IF.Form -> (Instruction, RF.ReadInstr)
 decode instrform = (instruction, rs1, rs2)
     where
         (instruction, rs1, rs2) = case instrform of
-            IF.RType _   rs2 rs1 _ rd _   -> (RType rinstruction rd,           rs1, rs2)
-            IF.IType _       rs1 _ rd _   -> (IType iinstruction immediate rd, rs1, 0)
-            IF.SType _   rs2 rs1 _ _  _   -> (SType sinstruction immediate,    rs1, rs2)
-            IF.BType _ _ rs2 rs1 _ _  _ _ -> (SType sinstruction immediate,    rs1, rs2)
-            IF.UType _             rd _   -> (UType uinstruction immediate rd, 0,   0)
-            IF.JType _ _ _ _       rd _   -> (UType uinstruction immediate rd, 0,   0)
-            IF.Unknown                    -> (UnknownType,                     0,   0)
+            IF.RType _   rs2 rs1 _ rd _   -> (RType rinstruction rd,           Two rs1 rs2)
+            IF.IType _       rs1 _ rd _   -> (IType iinstruction immediate rd, One rs1)
+            IF.SType _   rs2 rs1 _ _  _   -> (SType sinstruction immediate,    Two rs1 rs2)
+            IF.BType _ _ rs2 rs1 _ _  _ _ -> (SType sinstruction immediate,    Two rs1 rs2)
+            IF.UType _             rd _   -> (UType uinstruction immediate rd, None)
+            IF.JType _ _ _ _       rd _   -> (UType uinstruction immediate rd, None)
+            IF.Unknown                    -> (UnknownType,                     None)
 
         immediate = constructImmediate instrform
 
