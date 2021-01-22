@@ -66,7 +66,13 @@ system readInstrs = bundle (stall, out)
     where
         (stall, readID, out) = unbundle $ readerB $ bundle (readInstrs, bramOut)
 
-        bramOut = blockRam (iterate d32 (+1) 100) readID (register Nothing $ pure Nothing)
+        bramOut = blockRam initialRegs readID (register Nothing $ pure Nothing)
+
+
+initialRegs :: Vec 32 Value
+initialRegs = 
+    100:>101:>102:>103:>104:>105:>106:>107:>108:>109:>110:>111:>112:>113:>114:>115:>
+    116:>117:>118:>119:>120:>121:>122:>123:>124:>125:>126:>127:>128:>129:>130:>131:>Nil
 
 
 -- hmm het werkt maar dan moet je wel 1 cycle later beginnen...

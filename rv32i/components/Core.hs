@@ -10,21 +10,31 @@ import Globals
 
 
 
-core = decoded
+core = (maybe 0 id) <$> regValue
     where
         (rfStall, regValue) = unbundle $ RF.system regInstr
 
         (decoded, regInstr) = unbundle $ DE.system fetched
 
-        (fetched, readPC)   = unbundle $ IF.system $ bundle (doStall, progmem, register Nothing $ pure Nothing)
+        (fetched, readPC)   = unbundle $ IF.system $ bundle 
+                (doStall, progmem, register Nothing $ pure Nothing)
 
         doStall = or <$> (bundle (rfStall:>Nil))
 
         -- dit moet natuurlijk een los memory blokje worden maar dat komt wel
-        progmem = blockRam testmem readPC (register Nothing $ pure Nothing)
+        progmem = blockRam testmem (cutPC <$> readPC) (register Nothing $ pure Nothing)
+        
 
 
 
+
+
+
+
+
+
+cutPC :: IF.PC -> Unsigned 8
+cutPC pc = resize pc
 
 testmem = 
     (-50265837):>(42018339):>(50398227):>(-56349149):>(-55301085):>(-33282525):>(33554543):>(-20699389):>
